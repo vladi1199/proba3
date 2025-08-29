@@ -87,36 +87,38 @@ def find_product_link_via_search(driver, sku) -> str | None:
 
 
 # ---------------- Помощни: намиране на ред и цена ----------------
-def find_variant_row_by_sku(driver, sku):
+def wait_variant_row_by_sku(driver, sku, timeout=12):
     """
-    Намира <tr>, където колоната КОД (td.scrollable-td.td-sky) съдържа точно SKU.
-    Това съвпада с твоя HTML.
+    Изчаква реда (tr) за конкретното SKU:
+      КОД е в <td class="scrollable-td td-sky"> <span>КОД</span> 360947 </td>
     """
     q = norm(sku)
     xps = [
         f"//table[@id='fast-order-table']//tr[td[contains(@class,'td-sky')][contains(normalize-space(),'{q}')]]",
         f"//tr[td[contains(@class,'td-sky')][contains(normalize-space(),'{q}')]]",
     ]
-    for xp in xps:
-        try:
-            return driver.find_element(By.XPATH, xp)
-        except Exception:
-            continue
-    # последен fallback – търси клетка с КОД и се върни към реда
-    try:
-        cell = driver.find_element(By.XPATH, f"//td[contains(@class,'td-sky')][contains(normalize-space(),'{q}')]")
-        return cell.find_element(By.XPATH, "./ancestor::tr")
-    except Exception:
-        return None
+    end = time.time() + timeout
+    last_err = None
+    while time.time() < end:
+        for xp in xps:
+            try:
+                return driver.find_element(By.XPATH, xp)
+            except Exception as e:
+                last_err = e
+        time.sleep(0.2)
+    if last_err:
+        raise last_err
+    return None
 
 
 def extract_normal_price_from_row(row_el):
     """
     Взима НОРМАЛНАТА цена в лева от реда:
-      - ако има <strike>… лв. → това е нормалната (стара) цена
-      - иначе вземи видимата лв. цена в реда (както е в дадения HTML – без намаление)
+      1) ако има <strike>… лв. → връща него (стара цена);
+      2) иначе обхожда всички td.scrollable-td в реда и взима ПОСЛЕДНАТА „… лв.“.
+         (избягва числата от колони „Размер / Дължина / Тест“)
     """
-    # 1) <strike>… лв.
+    # 1) strike
     try:
         strikes = row_el.find_elements(By.TAG_NAME, "strike")
         for st in strikes:
@@ -127,17 +129,21 @@ def extract_normal_price_from_row(row_el):
     except Exception:
         pass
 
-    # 2) целевата клетка "ЦЕНА НА ДРЕБНО" → вземи лв. от вътрешния div
+    # 2) последната лв. в някой от 'td.scrollable-td'
     try:
-        price_td = row_el.find_element(By.XPATH, ".//td[.//span[contains(.,'ЦЕНА НА ДРЕБНО')]]")
-        txt = price_td.text.replace("\xa0", " ")
-        m = re.search(r"(\d+[.,]?\d*)\s*лв", txt, flags=re.IGNORECASE)
-        if m:
-            return m.group(1).replace(",", ".")
+        tds = row_el.find_elements(By.CSS_SELECTOR, "td.scrollable-td")
+        last_bgn = None
+        for td in tds:
+            txt = (td.text or "").replace("\xa0", " ")
+            m = re.search(r"(\d+[.,]?\d*)\s*лв", txt, flags=re.IGNORECASE)
+            if m:
+                last_bgn = m.group(1).replace(",", ".")
+        if last_bgn:
+            return last_bgn
     except Exception:
         pass
 
-    # 3) fallback: всяка лв. цена в реда
+    # 3) fallback: всяка „… лв.“ в целия ред
     try:
         txt = row_el.text.replace("\xa0", " ")
         m = re.search(r"(\d+[.,]?\d*)\s*лв", txt, flags=re.IGNORECASE)
@@ -180,20 +186,26 @@ def save_debug_html(driver, sku):
 
 
 def scrape_product_page(driver, product_url, sku):
-    """Зарежда продукта, намира реда по SKU и вади цена/статус."""
+    """Зарежда продукта, изчаква таблицата и конкретния ред за SKU, вади цена/статус."""
     driver.get(product_url)
     click_cookies_if_any(driver)
-    time.sleep(1.0)
+
+    # 1) изчакай таблицата да се появи
     try:
-        driver.execute_script("window.scrollBy(0, 400);")
+        WebDriverWait(driver, 12).until(EC.presence_of_element_located((By.ID, "fast-order-table")))
     except Exception:
+        # някои продукти нямат таблица (без варианти) — продължаваме да търсим ред по SKU
         pass
-    time.sleep(0.3)
+
+    # 2) изчакай конкретния ред за SKU
+    try:
+        row = wait_variant_row_by_sku(driver, sku, timeout=12)
+    except Exception:
+        row = None
 
     print(f"   🔎 TITLE: {driver.title.strip()[:120]}")
     print(f"   🔎 URL:   {driver.current_url}")
 
-    row = find_variant_row_by_sku(driver, sku)
     if not row:
         save_debug_html(driver, sku)
         return "Unknown", 0, None
@@ -261,7 +273,7 @@ def main():
             print(f"     → Статус: {status} | Бройки: {qty} | Цена: {price if price else '—'}")
 
             results.append([sku, status, qty, price or ""])
-            time.sleep(0.3)
+            time.sleep(0.2)
 
     finally:
         driver.quit()
