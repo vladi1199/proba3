@@ -56,8 +56,9 @@ def click_cookies_if_any(driver):
             pass
 
 
-# ---------------- Утилити ----------------
-def norm(s): return str(s).strip()
+def norm(s): 
+    return str(s).strip()
+
 
 def save_debug_html_text(text, sku, tag):
     try:
@@ -68,6 +69,7 @@ def save_debug_html_text(text, sku, tag):
     except Exception:
         pass
 
+
 def save_debug_html(driver, sku, tag):
     try:
         save_debug_html_text(driver.page_source, sku, tag)
@@ -75,20 +77,22 @@ def save_debug_html(driver, sku, tag):
         pass
 
 
-# ---------------- Търсене на продукт ----------------
-def find_product_link_via_search(driver, sku) -> str | None:
-    """Отваря /search?term=<SKU> и взима първия реален продукт от .product-item-wapper a.product-name"""
+# ---------------- Търсене: връща списък с кандидати ----------------
+def get_search_candidates(driver, sku, limit=12):
+    """Взима до 'limit' продуктови линка от /search?term=<SKU> (bg, en)."""
     q = norm(sku)
     search_urls = [
         f"https://filstar.com/search?term={q}",
         f"https://filstar.com/bg/search?term={q}",
         f"https://filstar.com/en/search?term={q}",
     ]
+    seen = set()
+    out = []
     for surl in search_urls:
         try:
             driver.get(surl)
             click_cookies_if_any(driver)
-            WebDriverWait(driver, 14).until(
+            WebDriverWait(driver, 12).until(
                 EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".product-item-wapper a.product-name"))
             )
             anchors = driver.find_elements(By.CSS_SELECTOR, ".product-item-wapper a.product-name")
@@ -98,13 +102,17 @@ def find_product_link_via_search(driver, sku) -> str | None:
                     continue
                 if href.startswith("/"):
                     href = urljoin("https://filstar.com", href)
-                return href
+                if href not in seen:
+                    seen.add(href)
+                    out.append(href)
+                    if len(out) >= limit:
+                        return out
         except Exception:
             continue
-    return None
+    return out
 
 
-# ---------------- Извличане през Selenium ----------------
+# ---------------- Lazy-load скрол до SKU ред ----------------
 def scroll_until_row_with_sku(driver, sku, max_steps=24, step_px=900, pause=0.35):
     q = norm(sku)
     xp = f"//table[@id='fast-order-table']//tr[td[contains(@class,'td-sky')][contains(normalize-space(),'{q}')]]"
@@ -135,10 +143,11 @@ def scroll_until_row_with_sku(driver, sku, max_steps=24, step_px=900, pause=0.35
         return False
 
 
+# ---------------- Извличане от таблицата ----------------
 def find_row_by_sku_in_table(driver, sku):
     q = norm(sku)
     try:
-        tbody = WebDriverWait(driver, 12).until(
+        tbody = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "#fast-order-table tbody"))
         )
     except Exception:
@@ -173,14 +182,13 @@ def extract_price_from_row_via_selenium(row_el):
     except Exception:
         pass
 
-    # 2) ценова клетка „ЦЕНА НА ДРЕБНО“ (вътрешен текст)
+    # 2) ценова клетка „ЦЕНА НА ДРЕБНО“ (вътрешен текст или innerHTML)
     try:
         price_td = row_el.find_element(By.XPATH, ".//td[.//span[contains(.,'ЦЕНА НА ДРЕБНО')]]")
         txt = (price_td.text or "").replace("\xa0", " ")
         m = re.search(r"(\d+[.,]?\d*)\s*лв", txt, flags=re.IGNORECASE)
         if m:
             return m.group(1).replace(",", ".")
-        # 2b) ако текстът е празен – пробвай innerHTML
         html = price_td.get_attribute("innerHTML") or ""
         m2 = re.search(r"(\d+[.,]?\d*)\s*(?:&nbsp;)?лв", html, flags=re.IGNORECASE)
         if m2:
@@ -188,7 +196,7 @@ def extract_price_from_row_via_selenium(row_el):
     except Exception:
         pass
 
-    # 3) fallback: първата „… лв.“ в целия ред (text или innerHTML)
+    # 3) fallback: първата „… лв.“ в целия ред
     try:
         txt = (row_el.text or "").replace("\xa0", " ")
         m = re.search(r"(\d+[.,]?\d*)\s*лв", txt, flags=re.IGNORECASE)
@@ -204,17 +212,13 @@ def extract_price_from_row_via_selenium(row_el):
     return None
 
 
-# ---------------- Fallback: извличане през requests (без JS) ----------------
+# ---------------- Fallback: requests (суров HTML) ----------------
 def extract_price_via_requests(product_url, sku):
-    """Парсва суровия HTML на страницата и намира цена за конкретния SKU."""
     try:
         r = requests.get(product_url, headers=HTTP_HEADERS, timeout=20)
         r.raise_for_status()
         html = r.text
-        # запази дебъг при нужда
-        # save_debug_html_text(html, sku, "requests_page")
 
-        # изолирай tbody на таблицата
         m_tbody = re.search(
             r'<table[^>]*id=["\']fast-order-table["\'][^>]*>.*?<tbody>(.*?)</tbody>',
             html, re.S | re.I
@@ -223,11 +227,10 @@ def extract_price_via_requests(product_url, sku):
             return None
         tbody = m_tbody.group(1)
 
-        # всички редове
         rows = re.findall(r'<tr[^>]*class=["\']table-row-scroll["\'][^>]*>(.*?)</tr>',
                           tbody, re.S | re.I)
         for row_html in rows:
-            # колона КОД
+            # КОД
             m_code = re.search(r'class=["\'][^"\']*td-sky[^"\']*["\'][^>]*>(.*?)</td>',
                                row_html, re.S | re.I)
             if not m_code:
@@ -237,7 +240,7 @@ def extract_price_via_requests(product_url, sku):
             if code_digits != str(sku):
                 continue
 
-            # цена (нормална): първо strike, иначе първата '... лв'
+            # цена (нормална): strike, иначе първата '... лв'
             m_strike = re.search(r"<strike[^>]*>(.*?)</strike>", row_html, re.S | re.I)
             if m_strike:
                 s_txt = re.sub(r"<[^>]*>", "", m_strike.group(1))
@@ -261,25 +264,20 @@ def scrape_product_page(driver, product_url, sku):
 
     # изчакай таблицата (ако има)
     try:
-        WebDriverWait(driver, 12).until(EC.presence_of_element_located((By.ID, "fast-order-table")))
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, "fast-order-table")))
     except Exception:
         pass
 
     # скрол (lazy-load)
     scroll_until_row_with_sku(driver, sku)
 
-    print(f"   🔎 TITLE: {driver.title.strip()[:120]}")
-    print(f"   🔎 URL:   {driver.current_url}")
-
-    # опит 1: Selenium
     row, _ = find_row_by_sku_in_table(driver, sku)
     price = None
     if row:
         price = extract_price_from_row_via_selenium(row)
 
-    # опит 2 (fallback): requests, ако Selenium не намери ред/цена
+    # fallback
     if price is None:
-        print("   🔁 Fallback: извличам през requests()…")
         price = extract_price_via_requests(product_url, sku)
         if price is None:
             save_debug_html(driver, sku, tag="no_price_or_row")
@@ -293,9 +291,9 @@ def read_sku_codes(path):
     skus = []
     with open(path, newline="", encoding="utf-8") as f:
         r = csv.reader(f)
-        header = next(r, None)  # пропускаме хедъра
+        _ = next(r, None)  # пропускаме хедъра
         for row in r:
-            if not row:
+            if not row: 
                 continue
             val = (row[0] or "").strip()
             if not val or val.lower() == "sku":
@@ -335,17 +333,29 @@ def main():
         for sku in skus:
             print(f"\n➡️ Обработвам SKU: {sku}")
 
-            product_url = find_product_link_via_search(driver, sku)
-            if not product_url:
-                print(f"❌ Не намерих продукт за {sku} в търсачката.")
+            # 1) вземи списък от кандидати от search
+            candidates = get_search_candidates(driver, sku, limit=12)
+            if not candidates:
+                print(f"❌ Няма резултати в търсачката за {sku}")
                 not_found.append(sku)
                 continue
 
-            print(f"  ✅ Продукт линк: {product_url}")
-            status, qty, price = scrape_product_page(driver, product_url, sku)
-            print(f"     → Статус: {status} | Бройки: {qty} | Цена: {price if price else '—'}")
+            found = False
+            for link in candidates:
+                print(f"  🔎 Пробвам продукт: {link}")
+                status, qty, price = scrape_product_page(driver, link, sku)
+                if price is not None:
+                    print(f"  ✅ Открих SKU {sku} на {link} → цена {price} лв.")
+                    results.append([sku, status, qty, price])
+                    found = True
+                    break
+                else:
+                    print(f"  ⚠️ На {link} SKU {sku} не се намери – опитваме следващ.")
 
-            results.append([sku, status, qty, price or ""])
+            if not found:
+                print(f"❌ Не намерих SKU {sku} в нито един от {len(candidates)} резултата.")
+                not_found.append(sku)
+
             time.sleep(0.2)
 
     finally:
