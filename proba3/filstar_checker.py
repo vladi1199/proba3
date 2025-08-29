@@ -2,11 +2,17 @@
 # -*- coding: utf-8 -*-
 
 """
-Filstar checker — СЕРИЙНО (без асинхронност, без нишки)
+Filstar checker — серийно, без пропускане/резюме.
+ВАЖНО: На ВСЯКО пускане обработва АБСОЛЮТНО всички SKU от CSV.
 - За всеки SKU: /search?term=<sku> -> кандидати -> продукт -> ред "КОД" -> цена/бройка
-- Щадящо към сайта: пауза между заявки и между SKU
-- Resume: прескача вече обработени (results/not_found/processed.txt)
-- Debug: записва HTML при проблем
+- Щадящо: пауза между заявки и между SKU (регулира се долу).
+- Нормална цена (лв.): взима <strike> ако има намаление, иначе първата '... лв.'.
+- Наличност: от колоната с брояча `.counter-box input[type='text']` (видима и без логин).
+- Няма никакво "resume" и "skip" — всеки път генерира нови results/not_found.
+requirements.txt:
+    requests
+    beautifulsoup4
+    lxml
 """
 
 import csv
@@ -23,9 +29,9 @@ from bs4 import BeautifulSoup
 # ---------------- Конфигурация ----------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SKU_CSV = os.path.join(BASE_DIR, "sku_list_filstar.csv")
+
 RES_CSV = os.path.join(BASE_DIR, "results_filstar.csv")
 NF_CSV  = os.path.join(BASE_DIR, "not_found_filstar.csv")
-STATE_FILE = os.path.join(BASE_DIR, "processed.txt")
 
 DEBUG_DIR = os.path.join(BASE_DIR, "debug_html")
 os.makedirs(DEBUG_DIR, exist_ok=True)
@@ -36,12 +42,12 @@ SEARCH_URLS = [
     "https://filstar.com/en/search?term={q}",
 ]
 
-# Щадящи настройки (можеш да увеличиш паузите при нужда)
+# Щадящи настройки (увеличи, ако искаш още по-бавно)
 REQUEST_DELAY = 0.4       # сек. пауза между HTTP заявки
 DELAY_BETWEEN_SKUS = 0.8  # сек. пауза между SKU
 TIMEOUT = 20              # сек. таймаут на заявка
 RETRIES = 3               # ретраии на заявка
-MAX_CANDIDATES = 15       # до колко продуктови линка да проверим от търсачката
+MAX_CANDIDATES = 15       # до колко продуктови линка да проверим от търсачката (на SKU)
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
@@ -79,15 +85,16 @@ class Http:
         elapsed = time.time() - self._last_ts
         if elapsed < REQUEST_DELAY:
             time.sleep(REQUEST_DELAY - elapsed)
+        last_exc = None
         for attempt in range(1, RETRIES + 1):
             try:
                 r = self.s.get(url, timeout=TIMEOUT, allow_redirects=True)
                 self._last_ts = time.time()
                 return r
             except requests.RequestException as e:
-                if attempt == RETRIES:
-                    raise
+                last_exc = e
                 time.sleep(0.6 * attempt)
+        raise last_exc or RuntimeError("HTTP GET failed")
 
 HTTP = Http()
 
@@ -104,15 +111,12 @@ def read_skus(path: str) -> List[str]:
                 skus.append(v)
     return skus
 
-def ensure_result_headers():
-    if not os.path.exists(RES_CSV):
-        with open(RES_CSV, "w", newline="", encoding="utf-8") as f:
-            w = csv.writer(f)
-            w.writerow(["SKU", "Наличност", "Бройки", "Цена (нормална лв.)"])
-    if not os.path.exists(NF_CSV):
-        with open(NF_CSV, "w", newline="", encoding="utf-8") as f:
-            w = csv.writer(f)
-            w.writerow(["SKU"])
+def init_result_files():
+    # ВИНАГИ презаписвай заглавките (зануляване на предишни резултати)
+    with open(RES_CSV, "w", newline="", encoding="utf-8") as f:
+        csv.writer(f).writerow(["SKU", "Наличност", "Бройки", "Цена (нормална лв.)"])
+    with open(NF_CSV, "w", newline="", encoding="utf-8") as f:
+        csv.writer(f).writerow(["SKU"])
 
 def append_result(row):
     with open(RES_CSV, "a", newline="", encoding="utf-8") as f:
@@ -121,28 +125,6 @@ def append_result(row):
 def append_nf(sku: str):
     with open(NF_CSV, "a", newline="", encoding="utf-8") as f:
         csv.writer(f).writerow([sku])
-
-def load_done_sets() -> set:
-    done = set()
-    if os.path.exists(RES_CSV):
-        with open(RES_CSV, newline="", encoding="utf-8") as f:
-            r = csv.reader(f); _ = next(r, None)
-            for row in r:
-                if row: done.add(norm(row[0]))
-    if os.path.exists(NF_CSV):
-        with open(NF_CSV, newline="", encoding="utf-8") as f:
-            r = csv.reader(f); _ = next(r, None)
-            for row in r:
-                if row: done.add(norm(row[0]))
-    if os.path.exists(STATE_FILE):
-        with open(STATE_FILE, encoding="utf-8") as f:
-            for line in f:
-                if norm(line): done.add(norm(line))
-    return done
-
-def append_state(sku: str):
-    with open(STATE_FILE, "a", encoding="utf-8") as f:
-        f.write(sku + "\n")
 
 # ---------------- Парсене ----------------
 def parse_search_candidates(html: str) -> List[str]:
@@ -166,7 +148,7 @@ def parse_search_candidates(html: str) -> List[str]:
 def extract_row_data_from_product_html(html: str, sku: str) -> Tuple[Optional[str], Optional[int], Optional[str]]:
     """
     Връща (status, qty, normal_price_lv) за точния ред по 'КОД'.
-    - Нормална цена: от <strike> ако има, иначе първата '... лв.' в ценовата клетка/реда.
+    - Нормална цена: от <strike> ако има намаление, иначе първата '... лв.' в ценовата клетка/реда.
     - Бройка: от counter-box input[type=text] value (видима и без логин).
     """
     soup = BeautifulSoup(html, "lxml")
@@ -244,10 +226,10 @@ def process_one_sku(sku: str):
     if not candidates:
         print(f"❌ Няма резултати в търсачката за {q}")
         append_nf(q)
-        append_state(q)
         return
 
     # 2) обхождаме кандидат продуктите последователно
+    saved_debug = False
     for link in candidates:
         try:
             r = HTTP.get(link)
@@ -257,17 +239,16 @@ def process_one_sku(sku: str):
             if price is not None:
                 print(f"  ✅ {q} → {price} лв. | {status} ({qty} бр.) | {link}")
                 append_result([q, status or "Unknown", qty or 0, price])
-                append_state(q)
                 return
             else:
-                # запази дебъг HTML само веднъж (от първия кандидат)
-                save_debug_html_text(r.text, q, "no_price_or_row")
+                if not saved_debug:
+                    save_debug_html_text(r.text, q, "no_price_or_row")
+                    saved_debug = True
         except Exception:
             continue
 
     print(f"❌ Не намерих SKU {q} в {len(candidates)} резултата.")
     append_nf(q)
-    append_state(q)
 
 # ---------------- main (серийно) ----------------
 def main():
@@ -275,29 +256,23 @@ def main():
         print(f"❌ Липсва {SKU_CSV}")
         sys.exit(1)
 
-    ensure_result_headers()
+    # ВИНАГИ занулявай резултатите на всяко пускане:
+    init_result_files()
 
     all_skus = read_skus(SKU_CSV)
     print(f"🧾 Общо SKU в CSV: {len(all_skus)}")
 
-    already = load_done_sets()
-    todo = [s for s in all_skus if norm(s) not in already]
-
-    print(f"⏩ Прескачам вече обработени: {len(already)}")
-    print(f"🚶 Серийно за обработка сега: {len(todo)}")
-
     count = 0
-    for sku in todo:
+    for sku in all_skus:
         process_one_sku(sku)
         count += 1
-        # щадяща пауза между отделните SKU
+        # щадяща пауза между SKU
         time.sleep(DELAY_BETWEEN_SKUS)
         if count % 100 == 0:
-            print(f"📦 Прогрес: {count}/{len(todo)} готови")
+            print(f"📦 Прогрес: {count}/{len(all_skus)} готови")
 
     print(f"\n✅ Резултати: {RES_CSV}")
     print(f"📄 Not found: {NF_CSV}")
-    print(f"🧷 State: {STATE_FILE}")
 
 if __name__ == "__main__":
     main()
