@@ -2,20 +2,22 @@ import csv
 import os
 import re
 import time
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # --- пътища ---
-BASE = os.path.dirname(os.path.abspath(__file__))
-SKU_CSV = os.path.join(BASE, "sku_list_filstar.csv")
-RES_CSV = os.path.join(BASE, "results_filstar.csv")
-NF_CSV  = os.path.join(BASE, "not_found_filstar.csv")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SKU_CSV = os.path.join(BASE_DIR, "sku_list_filstar.csv")
+RES_CSV = os.path.join(BASE_DIR, "results_filstar.csv")
+NF_CSV = os.path.join(BASE_DIR, "not_found_filstar.csv")
 
-# --- WebDriver ---
+# ========================
+# WebDriver
+# ========================
 def create_driver():
     opts = Options()
     opts.add_argument("--headless=new")
@@ -23,10 +25,10 @@ def create_driver():
     opts.add_argument("--disable-dev-shm-usage")
     opts.add_argument("--window-size=1366,900")
     opts.add_argument("--lang=bg-BG,bg")
-    opts.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127 Safari/537.36")
-    # по-„човешък“ профил
-    opts.add_experimental_option("excludeSwitches", ["enable-automation"])
-    opts.add_experimental_option("useAutomationExtension", False)
+    opts.add_argument(
+        "--user-agent=Mozilla/5.0 (X11; Linux x86_64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127 Safari/537.36"
+    )
     return webdriver.Chrome(options=opts)
 
 def click_cookies_if_any(driver):
@@ -42,83 +44,27 @@ def click_cookies_if_any(driver):
         except Exception:
             pass
 
-def norm(s): return (s or "").strip().replace(" ", "").replace("-", "")
+def norm(s: str) -> str:
+    return (s or "").strip().replace(" ", "").replace("-", "")
 
-# --- Емулация на АВТОСУГЕСТ ---
-def open_product_via_autosuggest(driver, sku):
-    q = norm(sku)
-    driver.get("https://filstar.com/")
-    click_cookies_if_any(driver)
-
-    # намери полето за търсене (пробваме няколко селектора)
-    search = None
-    for how, sel in [
-        (By.CSS_SELECTOR, "input[type='search']"),
-        (By.CSS_SELECTOR, "input[name='term']"),
-        (By.CSS_SELECTOR, "input[name='q']"),
-        (By.XPATH, "//input[contains(@placeholder,'търси') or contains(@placeholder,'Търси')]"),
-    ]:
-        try:
-            search = WebDriverWait(driver, 6).until(EC.presence_of_element_located((how, sel)))
-            break
-        except Exception:
-            continue
-    if not search:
-        return False
-
-    # въведи SKU бавно (имитира човек), за да се появи падащото меню
-    search.clear()
-    for ch in q:
-        search.send_keys(ch)
-        time.sleep(0.05)
-
-    # чакаме да се покажат предложенията и избираме линка с ?sku=<код>
-    try:
-        WebDriverWait(driver, 8).until(
-            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "a[href]"))
-        )
-    except Exception:
-        pass
-
-    # търсим в целия DOM линк от автосугеста към конкретното SKU
-    target = None
-    for el in driver.find_elements(By.CSS_SELECTOR, "a[href]"):
-        href = el.get_attribute("href") or ""
-        if f"?sku={q}" in href:
-            target = el
-            break
-    # ако няма директно ?sku= — вземи първия линк от предложението
-    if not target:
-        # ограничаваме до елементите видими под полето (дропдаун)
-        try:
-            target = driver.find_elements(By.CSS_SELECTOR, "a[href]")[0]
-        except Exception:
-            target = None
-
-    if not target:
-        return False
-
-    driver.execute_script("arguments[0].click();", target)
-    # кратко изчакване за зареждане на продукта
-    time.sleep(0.7)
-    return True
-
-# --- Четене на реда за SKU и цена/количество ---
+# ========================
+# Валидиране/четене от страница на продукт
+# ========================
 def find_row_for_sku(driver, sku):
     q = norm(sku)
-    # 1) стария клас table-row-<SKU>
+    # 1) table-row-<SKU>
     try:
         return driver.find_element(By.CSS_SELECTOR, f"tr[class*='table-row-{q}']")
     except Exception:
         pass
-    # 2) ред с клетка, която съдържа SKU
+    # 2) ред с <td> съдържащо SKU
     try:
         return driver.find_element(By.XPATH, f"//tr[.//td[contains(normalize-space(),'{q}')]]")
     except Exception:
         pass
-    # 3) всяка клетка/елемент, съдържащ SKU → най-близкия <tr>
+    # 3) елемент с текст SKU -> най-близкия <tr>
     try:
-        cell = driver.find_element(By.XPATH, f"//*[contains(normalize-space(),'{q')]")
+        cell = driver.find_element(By.XPATH, f"//*[contains(normalize-space(),'{q}')]")
         return cell.find_element(By.XPATH, "./ancestor::tr")
     except Exception:
         return None
@@ -138,24 +84,123 @@ def extract_qty_and_price(row):
     # цена
     price = None
     try:
-        price_holder = row.find_element(By.CSS_SELECTOR, "div.custom-tooltip-holder")
+        holder = row.find_element(By.CSS_SELECTOR, "div.custom-tooltip-holder")
         try:
-            strike = price_holder.find_element(By.TAG_NAME, "strike").text
+            strike = holder.find_element(By.TAG_NAME, "strike").text
             m = re.search(r"(\d+[.,]\d{2})", strike)
-            if m: price = m.group(1).replace(",", ".")
+            if m:
+                price = m.group(1).replace(",", ".")
         except Exception:
-            m = re.search(r"(\d+[.,]\d{2})", price_holder.text)
-            if m: price = m.group(1).replace(",", ".")
+            m = re.search(r"(\d+[.,]\d{2})", holder.text)
+            if m:
+                price = m.group(1).replace(",", ".")
     except Exception:
-        # fallback: вземи число + лв от самия ред
         m = re.search(r"(\d+[.,]\d{2})\s*лв", row.text.replace("\xa0", " "))
-        if m: price = m.group(1).replace(",", ".")
+        if m:
+            price = m.group(1).replace(",", ".")
     return status, qty, price
 
-# --- CSV I/O ---
+def page_has_sku_and_extract(driver, sku):
+    """Връща tuple (status, qty, price) ако намери реда, иначе (None, 0, None)."""
+    # лек скрол – често таблицата се дорендерира
+    try:
+        driver.execute_script("window.scrollBy(0, 400);")
+    except Exception:
+        pass
+    time.sleep(0.4)
+
+    row = find_row_for_sku(driver, sku)
+    if not row:
+        return None, 0, None
+    return extract_qty_and_price(row)
+
+# ========================
+# Опити за отваряне на продукт
+# ========================
+def open_direct_with_param(driver, sku) -> bool:
+    """Опит 1: директно products?sku=<код>."""
+    url = f"https://filstar.com/products?sku={norm(sku)}"
+    driver.get(url)
+    click_cookies_if_any(driver)
+    time.sleep(0.7)
+    status, qty, price = page_has_sku_and_extract(driver, sku)
+    if status is not None:
+        print(f"  ✅ Намерен продукт (директно): {url}")
+        print(f"     → Статус: {status} | Бройки: {qty} | Цена: {price} лв.")
+        return True
+    return False
+
+def open_via_autosuggest(driver, sku) -> bool:
+    """Опит 2: начална страница → пишем SKU → кликаме предложението с ?sku=."""
+    q = norm(sku)
+    driver.get("https://filstar.com/")
+    click_cookies_if_any(driver)
+
+    # поле за търсене
+    search = None
+    for how, sel in [
+        (By.CSS_SELECTOR, "input[type='search']"),
+        (By.CSS_SELECTOR, "input[name='term']"),
+        (By.CSS_SELECTOR, "input[name='q']"),
+        (By.XPATH, "//input[contains(@placeholder,'Търси') or contains(@placeholder,'търси')]"),
+    ]:
+        try:
+            search = WebDriverWait(driver, 6).until(EC.presence_of_element_located((how, sel)))
+            break
+        except Exception:
+            continue
+    if not search:
+        return False
+
+    # пишем плавно, за да се появи автосугест
+    search.clear()
+    for ch in q:
+        search.send_keys(ch)
+        time.sleep(0.05)
+
+    # изчакай да се появят предложения
+    try:
+        WebDriverWait(driver, 8).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "a[href]"))
+        )
+    except Exception:
+        pass
+
+    # 1) търсим директно линк с ?sku=<q>
+    target = None
+    for el in driver.find_elements(By.CSS_SELECTOR, "a[href]"):
+        href = el.get_attribute("href") or ""
+        if f"?sku={q}" in href or f"&sku={q}" in href:
+            target = el
+            break
+
+    # 2) ако няма – взимаме първия смислен линк в падащото меню
+    if not target:
+        links = driver.find_elements(By.CSS_SELECTOR, "a[href]")
+        if links:
+            target = links[0]
+
+    if not target:
+        return False
+
+    driver.execute_script("arguments[0].click();", target)
+    time.sleep(0.8)
+
+    status, qty, price = page_has_sku_and_extract(driver, sku)
+    if status is not None:
+        current = driver.current_url
+        print(f"  ✅ Намерен продукт (автосугест): {current}")
+        print(f"     → Статус: {status} | Бройки: {qty} | Цена: {price} лв.")
+        return True
+    return False
+
+# ========================
+# CSV I/O
+# ========================
 def read_sku_codes(path):
     with open(path, newline="", encoding="utf-8") as f:
-        r = csv.reader(f); next(r, None)
+        r = csv.reader(f)
+        next(r, None)  # пропусни хедъра
         return [row[0].strip() for row in r if row and row[0].strip()]
 
 def write_results(rows, path):
@@ -168,10 +213,14 @@ def write_results(rows, path):
 def write_not_found(skus, path):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as f:
-        w = csv.writer(f); w.writerow(["SKU"])
-        for s in skus: w.writerow([s])
+        w = csv.writer(f)
+        w.writerow(["SKU"])
+        for s in skus:
+            w.writerow([s])
 
-# --- main ---
+# ========================
+# main
+# ========================
 def main():
     skus = read_sku_codes(SKU_CSV)
     driver = create_driver()
@@ -181,29 +230,20 @@ def main():
         for sku in skus:
             print(f"➡️ Обработвам SKU: {sku}")
 
-            if not open_product_via_autosuggest(driver, sku):
-                print(f"❌ Не успях да отворя продукт за {sku} през автосугест")
-                not_found.append(sku)
+            # Опит 1: директен URL с ?sku=
+            if open_direct_with_param(driver, sku):
+                status, qty, price = page_has_sku_and_extract(driver, sku)
+                results.append([sku, status, qty, price])
                 continue
 
-            # леко изчакване/скрол — таблицата понякога се дорендерира
-            driver.execute_script("window.scrollBy(0, 400);")
-            time.sleep(0.4)
-
-            row = find_row_for_sku(driver, sku)
-            if not row:
-                print(f"❌ Не беше намерен ред за SKU {sku}")
-                not_found.append(sku)
+            # Опит 2: автосугест
+            if open_via_autosuggest(driver, sku):
+                status, qty, price = page_has_sku_and_extract(driver, sku)
+                results.append([sku, status, qty, price])
                 continue
 
-            status, qty, price = extract_qty_and_price(row)
-            if price is None:
-                print(f"❌ Няма цена в реда за SKU {sku}")
-                not_found.append(sku)
-                continue
-
-            print(f"  ✅ Статус: {status} | Бройки: {qty} | Цена: {price} лв.")
-            results.append([sku, status, qty, price])
+            print(f"❌ Не намерих валиден продукт за {sku}")
+            not_found.append(sku)
 
     finally:
         driver.quit()
