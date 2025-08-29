@@ -24,7 +24,7 @@ def create_driver():
     opts.add_argument("--headless=new")
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
-    opts.add_argument("--window-size=1440,1200")
+    opts.add_argument("--window-size=1440,1400")
     opts.add_argument("--lang=bg-BG,bg,en-US,en")
     opts.add_argument(
         "--user-agent=Mozilla/5.0 (X11; Linux x86_64) "
@@ -97,6 +97,54 @@ def save_debug_html(driver, sku, tag="page"):
         pass
 
 
+# ---------------- Lazy-load скрол до SKU ред ----------------
+def scroll_until_row_with_sku(driver, sku, max_steps=20, step_px=800, pause=0.35):
+    """
+    Скролва страницата на стъпки, докато редът с td.td-sky == SKU се появи в DOM
+    или се изчерпат опитите. Връща True ако открие реда.
+    """
+    q = norm(sku)
+    xp = f"//table[@id='fast-order-table']//tr[td[contains(@class,'td-sky')][contains(normalize-space(),'{q}')]]"
+    for i in range(max_steps):
+        # виж дали вече е в DOM
+        try:
+            row = driver.find_elements(By.XPATH, xp)
+            if row:
+                print(f"   🔄 DEBUG: ред със SKU {q} се появи след {i} скрол(а).")
+                return True
+        except Exception:
+            pass
+
+        # скрол надолу
+        try:
+            driver.execute_script(f"window.scrollBy(0, {step_px});")
+        except Exception:
+            pass
+
+        # тригерирай събитие scroll (някои Vue/Stimulus слушат това)
+        try:
+            driver.execute_script("window.dispatchEvent(new Event('scroll'));")
+        except Exception:
+            pass
+
+        time.sleep(pause)
+
+    # финален опит – до дъно
+    try:
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        driver.execute_script("window.dispatchEvent(new Event('scroll'));")
+        time.sleep(pause + 0.4)
+        row = driver.find_elements(By.XPATH, xp)
+        if row:
+            print(f"   🔄 DEBUG: редът се появи след финален скрол до дъното.")
+            return True
+    except Exception:
+        pass
+
+    print(f"   🔄 DEBUG: ред със SKU {q} не се появи след скрол.")
+    return False
+
+
 # ---------------- Извличане от таблицата ----------------
 def find_row_by_sku_in_table(driver, sku):
     """
@@ -110,7 +158,6 @@ def find_row_by_sku_in_table(driver, sku):
             EC.presence_of_element_located((By.CSS_SELECTOR, "#fast-order-table tbody"))
         )
     except Exception:
-        # някои продукти нямат таблица (без варианти)
         return None, None
 
     rows = tbody.find_elements(By.CSS_SELECTOR, "tr")
@@ -133,12 +180,12 @@ def find_row_by_sku_in_table(driver, sku):
 
 def extract_normal_price_from_row(row_el):
     """
-    Взима НОРМАЛНАТА цена в лева от реда:
-      1) ако има <strike>… лв. → нормална (стара) цена
-      2) иначе вземи първата '… лв.' от ценовата клетка (td с 'ЦЕНА НА ДРЕБНО')
-      3) като fallback – всяка '… лв.' в целия ред
+    Нормална цена в лева:
+      1) ако има <strike>… лв. → връща него (стара/нормална цена)
+      2) иначе взима първата '… лв.' от ценовата клетка (td с 'ЦЕНА НА ДРЕБНО')
+      3) fallback – всяка '… лв.' в целия ред
     """
-    # 1) strike в реда
+    # 1) strike
     try:
         strikes = row_el.find_elements(By.TAG_NAME, "strike")
         for st in strikes:
@@ -178,30 +225,25 @@ def extract_normal_price_from_row(row_el):
 
 
 def scrape_product_page(driver, product_url, sku):
-    """Зарежда продукта, намира реда по SKU и вади нормалната цена (лв) + статус/qty."""
+    """Зарежда продукта, скролва докато се появи редът за SKU, после вади цена/статус."""
     driver.get(product_url)
     click_cookies_if_any(driver)
 
-    # изчакай таблицата и рендера
+    # изчакай таблицата (ако има)
     try:
-        WebDriverWait(driver, 14).until(EC.presence_of_element_located((By.ID, "fast-order-table")))
+        WebDriverWait(driver, 12).until(EC.presence_of_element_located((By.ID, "fast-order-table")))
     except Exception:
         pass
-    # малко скрол за тригър на lazy render
-    try:
-        driver.execute_script("window.scrollBy(0, 500);")
-        time.sleep(0.4)
-        driver.execute_script("window.scrollBy(0, 500);")
-        time.sleep(0.4)
-    except Exception:
-        pass
+
+    # скролвай, докато редът със SKU се появи (lazy-load)
+    scroll_until_row_with_sku(driver, sku, max_steps=24, step_px=900, pause=0.35)
 
     print(f"   🔎 TITLE: {driver.title.strip()[:120]}")
     print(f"   🔎 URL:   {driver.current_url}")
 
     row, code_text = find_row_by_sku_in_table(driver, sku)
     if not row:
-        print("   ⚠️ DEBUG: не намерих ред за това SKU в таблицата.")
+        print("   ⚠️ DEBUG: не намерих ред за това SKU в таблицата дори след скрол.")
         save_debug_html(driver, sku, tag="no_row")
         return "Unknown", 0, None
 
@@ -210,7 +252,6 @@ def scrape_product_page(driver, product_url, sku):
         print("   ⚠️ DEBUG: не успях да извлека цена от реда – dump-вам HTML.")
         save_debug_html(driver, sku, tag="no_price")
 
-    # статус/qty не се виждат за анонимни – оставяме Unknown/0
     status, qty = "Unknown", 0
     return status, qty, price
 
