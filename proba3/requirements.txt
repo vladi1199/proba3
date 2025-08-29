@@ -1,5 +1,6 @@
-selenium
-python-dotenv
-chromedriver-autoinstaller
+requests
 beautifulsoup4
 lxml
+python-dotenv
+selenium
+chromedriver-autoinstaller
