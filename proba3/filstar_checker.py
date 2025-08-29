@@ -55,17 +55,11 @@ def _variants(sku: str):
 # Намираме URL на продукта по SKU
 # -----------------------------------------
 def find_product_url(driver, sku):
-    """
-    Търси в /search?term=<SKU>, събира линкове от картите,
-    обхожда ги и връща първата продуктова страница, където
-    има ред за конкретния SKU (клас table-row-<sku> или <td> със SKU).
-    """
     SEARCH_URLS = [
         "https://filstar.com/search?term={q}",
         "https://filstar.com/bg/search?term={q}",
     ]
 
-    # много широк набор от селектори за линкове в резултатите
     LINK_SELECTORS = [
         ".search-results a[href]",
         ".products a[href]",
@@ -91,12 +85,9 @@ def find_product_url(driver, sku):
                 hrefs.append(href)
         return hrefs
 
-    # валидира, че продуктовата страница съдържа ред с търсения SKU
     def page_matches(driver, q):
-        # 1) старият клас
         if driver.find_elements(By.CSS_SELECTOR, f"tr[class*='table-row-{q}']"):
             return True
-        # 2) клетка с „КОД“ съдържаща SKU
         if driver.find_elements(By.XPATH, f"//tr[.//td[contains(normalize-space(),'{q}')]]"):
             return True
         return False
@@ -119,9 +110,130 @@ def find_product_url(driver, sku):
             if not links:
                 continue
 
-            # приоритизирай линковете, които съдържат кода
             prio = [h for h in links if q in h]
             ordered = prio + [h for h in links if h not in prio]
 
             # отвори до 20 кандидата и валидирай
             for href in ordered[:20]:
+                try:
+                    driver.get(href)
+                    time.sleep(0.7)
+                    if page_matches(driver, q):
+                        return href
+                except Exception:
+                    continue
+
+    return None
+
+# ---------------------------------------------------
+# Проверка на наличността, бройката и цената
+# ---------------------------------------------------
+def check_availability_and_price(driver, sku):
+    try:
+        row = None
+        try:
+            row = driver.find_element(By.CSS_SELECTOR, f"tr[class*='table-row-{sku}']")
+        except Exception:
+            try:
+                row = driver.find_element(By.XPATH, f"//tr[.//td[contains(normalize-space(),'{_norm(sku)}')]]")
+            except Exception as e2:
+                print(f"❌ Не беше намерен ред с SKU {sku}: {e2}")
+                return None, 0, None
+
+        qty = 0
+        try:
+            qty_input = row.find_element(By.CSS_SELECTOR, "td.quantity-plus-minus input")
+            mx = qty_input.get_attribute("data-max-qty-1") or qty_input.get_attribute("max")
+            if mx and mx.isdigit():
+                qty = int(mx)
+        except Exception:
+            pass
+        status = "Наличен" if qty > 0 else "Изчерпан"
+
+        price = None
+        try:
+            price_element = row.find_element(By.CSS_SELECTOR, "div.custom-tooltip-holder")
+            try:
+                strike = price_element.find_element(By.TAG_NAME, "strike")
+                m = re.search(r"(\d+[.,]\d{2})", strike.text)
+                if m:
+                    price = m.group(1).replace(",", ".")
+            except Exception:
+                m = re.search(r"(\d+[.,]\d{2})", price_element.text)
+                if m:
+                    price = m.group(1).replace(",", ".")
+        except Exception:
+            m = re.search(r"(\d+[.,]\d{2})\s*лв", row.text.replace("\xa0", " "))
+            if m:
+                price = m.group(1).replace(",", ".")
+
+        return status, qty, price
+
+    except Exception as e:
+        print(f"❌ Грешка при проверка на наличността и цената за SKU {sku}: {e}")
+        return None, 0, None
+
+# -----------------------
+# CSV I/O
+# -----------------------
+def read_sku_codes(path):
+    with open(path, newline='', encoding='utf-8') as f:
+        reader = csv.reader(f)
+        next(reader, None)
+        return [row[0].strip() for row in reader if row]
+
+def save_results(results, output_path):
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow(['SKU', 'Наличност', 'Бройки', 'Цена'])
+        writer.writerows(results)
+
+def save_not_found(skus_not_found, output_path):
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        writer.writerow(['SKU'])
+        for sku in skus_not_found:
+            writer.writerow([sku])
+
+# -----------------------
+# main
+# -----------------------
+def main():
+    sku_file = os.path.join(base_path, 'sku_list_filstar.csv')
+    result_file = os.path.join(base_path, 'results_filstar.csv')
+    not_found_file = os.path.join(base_path, 'not_found_filstar.csv')
+
+    skus = read_sku_codes(sku_file)
+    driver = create_driver()
+    results, not_found = [], []
+
+    for sku in skus:
+        print(f"➡️ Обработвам SKU: {sku}")
+        product_url = find_product_url(driver, sku)
+        if product_url:
+            print(f"  ✅ Намерен продукт: {product_url}")
+            driver.get(product_url)
+            time.sleep(0.6)
+            status, qty, price = check_availability_and_price(driver, sku)
+            if status is None or price is None:
+                print(f"❌ SKU {sku} не съдържа валидна информация.")
+                not_found.append(sku)
+            else:
+                print(f"  📦 Статус: {status} | Бройки: {qty} | Цена: {price} лв.")
+                results.append([sku, status, qty, price])
+        else:
+            print(f"❌ Няма валиден продукт за SKU {sku}")
+            not_found.append(sku)
+
+    driver.quit()
+
+    save_results(results, result_file)
+    save_not_found(not_found, not_found_file)
+
+    print(f"✅ Запазени резултати: {result_file}")
+    print(f"❌ Ненамерени SKU кодове: {not_found_file}")
+
+if __name__ == '__main__':
+    main()
