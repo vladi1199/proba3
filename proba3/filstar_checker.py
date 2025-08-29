@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# === "СТАРИЯТ" РАБОТЕЩ ВАРИАНТ (Selenium) ===
-# - Обхожда ВСИЧКИ SKU от CSV при всяко пускане (без resume).
-# - Търси през /search?term=<sku>, взима кандидат-линкове.
-# - Отваря продуктови страници и намира реда по "КОД" (точно SKU).
-# - Взима НОРМАЛНАТА цена в лева (от <strike>, или първата "… лв." в реда).
-# - Бройки: от .counter-box input[type=text] (ако го има без логин).
-# - Серийно и щадящо: леки паузи между действията.
+# === Selenium вариант — без проверка за бройки ===
+# - На всяко пускане обхожда всички SKU от CSV (без resume).
+# - Търси през /search?term=<sku> и събира кандидат продуктови линкове.
+# - Отваря продуктите, намира точния ред по "КОД" и:
+#     * Цена: нормалната (от <strike> ако има; иначе първата „... лв.“ в реда)
+#     * Наличност: ако редът съдържа tooltip "Изчерпан продукт!" / Email иконата за нотификация → "Изчерпан", иначе "Наличен"
+# - Не чете и не записва бройки (пише "-" за колона „Бройки“).
+# - Серийно и щадящо (леки паузи).
 
 import csv
 import os
@@ -55,7 +56,7 @@ def create_driver() -> webdriver.Chrome:
     opts.add_argument("--headless=new")
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
-    opts.add_argument("--window-size=1280,2000")
+    opts.add_argument("--window-size=1280,2200")
     driver = webdriver.Chrome(options=opts)
     driver.set_page_load_timeout(PAGE_TIMEOUT)
     return driver
@@ -90,17 +91,16 @@ def read_skus(path: str):
 def get_search_candidates(driver, sku: str):
     url = SEARCH_URL.format(q=sku)
     driver.get(url)
-    # кратка пауза да се дорисува
     time.sleep(REQUEST_WAIT)
 
-    # 1) класическият списък
-    links = []
     try:
         WebDriverWait(driver, PAGE_TIMEOUT).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, "main"))
         )
     except Exception:
         pass
+
+    links = []
 
     # a) .product-item-wapper a.product-name
     try:
@@ -137,7 +137,10 @@ def get_search_candidates(driver, sku: str):
 def extract_from_product_page(driver, sku: str):
     """
     Намира реда по 'КОД' (точно SKU) в #fast-order-table.
-    Връща (status, qty, price_lv) или (None, None, None).
+    Връща (status, qty_placeholder, price_lv), като qty_placeholder = "-"
+    Наличност:
+      - ако в реда има блок за изчерпан продукт (Email икона + tooltip / data-target="#send-request") → "Изчерпан"
+      - иначе → "Наличен"
     """
     try:
         WebDriverWait(driver, PAGE_TIMEOUT).until(
@@ -193,19 +196,28 @@ def extract_from_product_page(driver, sku: str):
         except Exception:
             pass
 
-    # --- Бройки / статус (ако е видим без логин) ---
-    qty = 0
-    status = "Unknown"
+    # --- Наличност само по tooltip/email (без бройки) ---
+    status = "Наличен"  # по подразбиране
     try:
-        inp = target.find_element(By.CSS_SELECTOR, ".counter-box input[type='text']")
-        val = (inp.get_attribute("value") or "").strip()
-        if val.isdigit():
-            qty = int(val)
-            status = "Наличен" if qty > 0 else "Изчерпан"
+        # Варианти, по които разпознаваме „Изчерпан“:
+        # 1) има елемент с data-target="#send-request" (бутон „известете ме“)
+        target.find_element(By.CSS_SELECTOR, "[data-target='#send-request']")
+        status = "Изчерпан"
     except Exception:
-        pass
+        # 2) има tooltip със „Изчерпан продукт!“ в текста
+        try:
+            if "Изчерпан продукт!" in target.text:
+                status = "Изчерпан"
+            else:
+                # 3) има иконка Email (alt="Shopping cart") вътре в custom-tooltip-holder
+                emails = target.find_elements(By.CSS_SELECTOR, ".custom-tooltip-holder img[alt='Shopping cart']")
+                if emails:
+                    status = "Изчерпан"
+        except Exception:
+            pass
 
-    return status, qty, price
+    qty_placeholder = "-"  # вече НЕ четем бройки
+    return status, qty_placeholder, price
 
 # ---------------- ОБРАБОТКА НА 1 SKU ----------------
 def process_one_sku(driver, sku: str):
@@ -222,10 +234,10 @@ def process_one_sku(driver, sku: str):
         try:
             driver.get(link)
             time.sleep(REQUEST_WAIT)
-            status, qty, price = extract_from_product_page(driver, sku)
-            if price:
-                print(f"  ✅ {sku} → {price} лв. | {status} ({qty} бр.) | {link}")
-                append_result([sku, status or "Unknown", qty or 0, price])
+            status, qty_ph, price = extract_from_product_page(driver, sku)
+            if price is not None:
+                print(f"  ✅ {sku} → {price} лв. | {status} | {link}")
+                append_result([sku, status or "Наличен", qty_ph, price])
                 return
         except Exception:
             continue
@@ -248,7 +260,7 @@ def main():
     try:
         for sku in skus:
             process_one_sku(driver, sku)
-            time.sleep(BETWEEN_SKU)
+            time.sleep(BETWEEN_SKU)  # щадяща пауза
     finally:
         driver.quit()
 
