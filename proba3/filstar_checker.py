@@ -29,7 +29,6 @@ def create_driver():
         "--user-agent=Mozilla/5.0 (X11; Linux x86_64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127 Safari/537.36"
     )
-    # по-"човешки" профил
     opts.add_experimental_option("excludeSwitches", ["enable-automation"])
     opts.add_experimental_option("useAutomationExtension", False)
     return webdriver.Chrome(options=opts)
@@ -55,17 +54,14 @@ def norm(s: str) -> str:
 # ========================
 def find_row_for_sku(driver, sku):
     q = norm(sku)
-    # 1) table-row-<SKU>
     try:
         return driver.find_element(By.CSS_SELECTOR, f"tr[class*='table-row-{q}']")
     except Exception:
         pass
-    # 2) ред с <td> съдържащо SKU
     try:
         return driver.find_element(By.XPATH, f"//tr[.//td[contains(normalize-space(),'{q}')]]")
     except Exception:
         pass
-    # 3) произволен елемент с текст SKU -> най-близкия <tr>
     try:
         cell = driver.find_element(By.XPATH, f"//*[contains(normalize-space(),'{q}')]")
         return cell.find_element(By.XPATH, "./ancestor::tr")
@@ -73,7 +69,6 @@ def find_row_for_sku(driver, sku):
         return None
 
 def extract_qty_and_price(row):
-    # количество
     qty = 0
     try:
         inp = row.find_element(By.CSS_SELECTOR, "td.quantity-plus-minus input")
@@ -84,7 +79,6 @@ def extract_qty_and_price(row):
         pass
     status = "Наличен" if qty > 0 else "Изчерпан"
 
-    # цена
     price = None
     try:
         holder = row.find_element(By.CSS_SELECTOR, "div.custom-tooltip-holder")
@@ -104,24 +98,47 @@ def extract_qty_and_price(row):
     return status, qty, price
 
 def page_has_sku_and_extract(driver, sku):
-    """Връща (status, qty, price) ако намери реда за SKU, иначе (None, 0, None)."""
-    # кратък скрол – таблицата понякога се дорендерира
-    try:
-        driver.execute_script("window.scrollBy(0, 400);")
-    except Exception:
-        pass
-    time.sleep(0.4)
+    q = norm(sku)
 
+    # опит 1: таблица
     row = find_row_for_sku(driver, sku)
-    if not row:
+    if row:
+        return extract_qty_and_price(row)
+
+    # опит 2: нов шаблон – детайлна страница
+    try:
+        code_el = driver.find_element(By.XPATH, "//*[contains(text(),'КОД') or contains(text(),'Code')]")
+        code_text = code_el.text
+        if q not in code_text.replace(" ", ""):
+            return None, 0, None
+
+        # цена
+        price = None
+        try:
+            price_el = driver.find_element(By.CSS_SELECTOR, ".price, .product-price, .price-value")
+            m = re.search(r"(\d+[.,]\d{2})", price_el.text)
+            if m:
+                price = m.group(1).replace(",", ".")
+        except Exception:
+            pass
+
+        # наличност
+        status = "Наличен"
+        try:
+            avail = driver.find_element(By.XPATH, "//*[contains(text(),'наличност') or contains(text(),'Наличност')]").text
+            if "няма" in avail.lower() or "изчерпан" in avail.lower():
+                status = "Изчерпан"
+        except Exception:
+            pass
+
+        return status, 1 if status == "Наличен" else 0, price
+    except Exception:
         return None, 0, None
-    return extract_qty_and_price(row)
 
 # ========================
 # Опити за отваряне на продукт
 # ========================
 def open_direct_with_param(driver, sku) -> bool:
-    """Опит 1: пробваме няколко директни варианта с ?sku=<код>."""
     q = norm(sku)
     candidates = [
         f"https://filstar.com/products?sku={q}",
@@ -140,85 +157,13 @@ def open_direct_with_param(driver, sku) -> bool:
             return True
     return False
 
-def open_via_autosuggest_js(driver, sku) -> bool:
-    """
-    Опит 2: начална страница → попълваме полето с JS (без send_keys),
-    диспатчваме 'input' събитие, чакаме линк с ?sku=<код> и навигираме към него.
-    """
-    q = norm(sku)
-    driver.get("https://filstar.com/")
-    click_cookies_if_any(driver)
-
-    # инжектираме стойността в полето + input event (няколко възможни селектора)
-    js = """
-    const q = arguments[0];
-    const sels = [
-      "input[type='search']",
-      "input[name='term']",
-      "input[name='q']",
-      "input[placeholder*='Търси']",
-      "input[placeholder*='търси']"
-    ];
-    let box = null;
-    for (const s of sels) {
-      const el = document.querySelector(s);
-      if (el) { box = el; break; }
-    }
-    if (!box) return "NO_INPUT";
-    box.value = q;
-    box.dispatchEvent(new Event('input', {bubbles:true}));
-    return "OK";
-    """
-    res = driver.execute_script(js, q)
-    if res == "NO_INPUT":
-        return False
-
-    # изчакай до 8s да се появи линк с ?sku=<q>
-    href = None
-    for _ in range(40):
-        try:
-            links = driver.find_elements(By.CSS_SELECTOR, "a[href]")
-            for el in links:
-                h = el.get_attribute("href") or ""
-                if f"?sku={q}" in h or f"&sku={q}" in h:
-                    href = h
-                    break
-            if href:
-                break
-        except Exception:
-            pass
-        time.sleep(0.2)
-
-    # ако не е открит директен линк, пробваме първия смислен линк под полето
-    if not href:
-        try:
-            links = driver.find_elements(By.CSS_SELECTOR, "a[href]")
-            if links:
-                href = links[0].get_attribute("href")
-        except Exception:
-            href = None
-
-    if not href:
-        return False
-
-    # навигирай към продукта
-    driver.get(href)
-    time.sleep(0.8)
-    status, qty, price = page_has_sku_and_extract(driver, sku)
-    if status is not None:
-        current = driver.current_url
-        print(f"  ✅ Намерен продукт (автосугест/JS): {current}")
-        print(f"     → Статус: {status} | Бройки: {qty} | Цена: {price} лв.")
-        return True
-    return False
-
 # ========================
 # CSV I/O
 # ========================
 def read_sku_codes(path):
     with open(path, newline="", encoding="utf-8") as f:
         r = csv.reader(f)
-        next(r, None)  # пропусни хедъра
+        next(r, None)
         return [row[0].strip() for row in r if row and row[0].strip()]
 
 def write_results(rows, path):
@@ -248,14 +193,7 @@ def main():
         for sku in skus:
             print(f"➡️ Обработвам SKU: {sku}")
 
-            # Опит 1: директни URL-и с ?sku=
             if open_direct_with_param(driver, sku):
-                status, qty, price = page_has_sku_and_extract(driver, sku)
-                results.append([sku, status, qty, price])
-                continue
-
-            # Опит 2: автосугест чрез JS (без send_keys)
-            if open_via_autosuggest_js(driver, sku):
                 status, qty, price = page_has_sku_and_extract(driver, sku)
                 results.append([sku, status, qty, price])
                 continue
