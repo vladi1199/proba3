@@ -1,0 +1,48 @@
+name: Update XML Daily
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Всеки ден в 00:00 UTC (03:00 BG време)
+  workflow_dispatch:
+
+jobs:
+  update-xml:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        working-directory: ./proba2
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Filstar checker
+        working-directory: ./proba2
+        run: python filstar_checker.py
+
+      - name: Run Filstar converter
+        working-directory: ./proba2
+        run: python filstar_converter.py
+
+      - name: List generated XML and CSV files
+        working-directory: ./proba2
+        run: ls -lh *.xml *.csv || echo "No XML or CSV files found"
+
+      - name: Commit and Push changes
+        working-directory: ./proba2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add *.xml *.csv
+          git commit -m "Daily auto-update XML and CSV [skip ci]" || echo "No changes to commit"
+          git push
