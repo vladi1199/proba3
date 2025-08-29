@@ -2,6 +2,7 @@ import csv
 import os
 import re
 import time
+import pathlib
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -12,7 +13,9 @@ from dotenv import load_dotenv
 # Зареждаме променливите от .env файл (ако има)
 load_dotenv()
 
-base_path = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ART_DIR = pathlib.Path(BASE_DIR) / "artifacts"
+ART_DIR.mkdir(exist_ok=True)
 
 # ---------------------------
 # WebDriver
@@ -25,10 +28,20 @@ def create_driver():
     options.add_argument("--window-size=1366,900")
     options.add_argument("--lang=bg-BG,bg")
     options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127 Safari/537.36")
-    # лек anti-bot
+    # anti-bot дреболии
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
     return webdriver.Chrome(options=options)
+
+def save_debug(driver, name):
+    try:
+        png = ART_DIR / f"{name}.png"
+        html = ART_DIR / f"{name}.html"
+        driver.save_screenshot(str(png))
+        with open(html, "w", encoding="utf-8") as f:
+            f.write(driver.page_source)
+    except Exception:
+        pass
 
 def click_cookies_if_any(driver):
     for how, what in [
@@ -50,6 +63,11 @@ def _variants(sku: str):
     a = _norm(sku)
     b = a.lstrip("0") or a
     return [a] if a == b else [a, b]
+
+def _slow_scroll(driver, steps=6, pause=0.25):
+    for i in range(steps):
+        driver.execute_script("window.scrollBy(0, document.body.scrollHeight/%s);" % steps)
+        time.sleep(pause)
 
 # -----------------------------------------
 # Намираме URL на продукта по SKU
@@ -83,12 +101,15 @@ def find_product_url(driver, sku):
                     continue
                 seen.add(href)
                 hrefs.append(href)
-        return hrefs
+        return hrefs[:50]
 
     def page_matches(driver, q):
+        # 1) старият клас
         if driver.find_elements(By.CSS_SELECTOR, f"tr[class*='table-row-{q}']"):
             return True
-        if driver.find_elements(By.XPATH, f"//tr[.//td[contains(normalize-space(),'{q}')]]"):
+        # 2) “КОД” в таблица/клетка
+        xpath = f"//tr[.//td[contains(normalize-space(),'{q}')]] | //*[contains(translate(normalize-space(), 'код', 'КОД'), 'КОД')][contains(., '{q}')]"
+        if driver.find_elements(By.XPATH, xpath):
             return True
         return False
 
@@ -96,20 +117,22 @@ def find_product_url(driver, sku):
         for tmpl in SEARCH_URLS:
             driver.get(tmpl.format(q=q))
             click_cookies_if_any(driver)
+
+            # изчакай + скрол, защото плочките често се дорендерират
             try:
                 WebDriverWait(driver, 12).until(
-                    EC.any_of(
-                        EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".search-results, .products, .product-item")),
-                        EC.presence_of_element_located((By.XPATH, "//*[contains(.,'Няма резултати') or contains(.,'няма резултати')]"))
-                    )
+                    EC.presence_of_element_located((By.CSS_SELECTOR, ".search-results, .products, .product-item"))
                 )
             except Exception:
-                time.sleep(1.0)
+                pass
+            _slow_scroll(driver, steps=6, pause=0.25)
 
             links = collect_links()
             if not links:
+                save_debug(driver, f"search_no_links_{q}")
                 continue
 
+            # приоритизирай линковете, които съдържат кода
             prio = [h for h in links if q in h]
             ordered = prio + [h for h in links if h not in prio]
 
@@ -118,10 +141,14 @@ def find_product_url(driver, sku):
                 try:
                     driver.get(href)
                     time.sleep(0.7)
+                    _slow_scroll(driver, steps=4, pause=0.2)
                     if page_matches(driver, q):
                         return href
                 except Exception:
                     continue
+
+            # нищо не пасна – запази debug от последната продуктова страница
+            save_debug(driver, f"product_no_match_{q}")
 
     return None
 
@@ -131,15 +158,18 @@ def find_product_url(driver, sku):
 def check_availability_and_price(driver, sku):
     try:
         row = None
+        # 1) старият селектор по клас
         try:
             row = driver.find_element(By.CSS_SELECTOR, f"tr[class*='table-row-{sku}']")
         except Exception:
+            # 2) fallback – ред/клетка, съдържащи SKU (колона „КОД“)
             try:
                 row = driver.find_element(By.XPATH, f"//tr[.//td[contains(normalize-space(),'{_norm(sku)}')]]")
             except Exception as e2:
                 print(f"❌ Не беше намерен ред с SKU {sku}: {e2}")
                 return None, 0, None
 
+        # наличност
         qty = 0
         try:
             qty_input = row.find_element(By.CSS_SELECTOR, "td.quantity-plus-minus input")
@@ -150,6 +180,7 @@ def check_availability_and_price(driver, sku):
             pass
         status = "Наличен" if qty > 0 else "Изчерпан"
 
+        # цена (твоята логика + fallback)
         price = None
         try:
             price_element = row.find_element(By.CSS_SELECTOR, "div.custom-tooltip-holder")
@@ -201,9 +232,9 @@ def save_not_found(skus_not_found, output_path):
 # main
 # -----------------------
 def main():
-    sku_file = os.path.join(base_path, 'sku_list_filstar.csv')
-    result_file = os.path.join(base_path, 'results_filstar.csv')
-    not_found_file = os.path.join(base_path, 'not_found_filstar.csv')
+    sku_file = os.path.join(BASE_DIR, 'sku_list_filstar.csv')
+    result_file = os.path.join(BASE_DIR, 'results_filstar.csv')
+    not_found_file = os.path.join(BASE_DIR, 'not_found_filstar.csv')
 
     skus = read_sku_codes(sku_file)
     driver = create_driver()
@@ -216,6 +247,7 @@ def main():
             print(f"  ✅ Намерен продукт: {product_url}")
             driver.get(product_url)
             time.sleep(0.6)
+            _slow_scroll(driver, steps=4, pause=0.2)
             status, qty, price = check_availability_and_price(driver, sku)
             if status is None or price is None:
                 print(f"❌ SKU {sku} не съдържа валидна информация.")
@@ -225,6 +257,7 @@ def main():
                 results.append([sku, status, qty, price])
         else:
             print(f"❌ Няма валиден продукт за SKU {sku}")
+            save_debug(driver, f"no_valid_product_{_norm(sku)}")
             not_found.append(sku)
 
     driver.quit()
