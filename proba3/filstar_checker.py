@@ -107,32 +107,44 @@ def page_has_sku_and_extract(driver, sku):
 
     # опит 2: нов шаблон – детайлна страница
     try:
+        # debug: отпечатай първите 500 символа от HTML
+        print("🔎 DEBUG HTML snippet:")
+        print(driver.page_source[:500])
+
+        # код
         code_el = driver.find_element(By.XPATH, "//*[contains(text(),'КОД') or contains(text(),'Code')]")
         code_text = code_el.text
+        print(f"🔎 DEBUG found code element: {code_text}")
+
         if q not in code_text.replace(" ", ""):
+            print(f"❌ DEBUG: SKU {q} not found in code_text: {code_text}")
             return None, 0, None
 
         # цена
         price = None
         try:
             price_el = driver.find_element(By.CSS_SELECTOR, ".price, .product-price, .price-value")
+            print(f"🔎 DEBUG found price element: {price_el.text}")
             m = re.search(r"(\d+[.,]\d{2})", price_el.text)
             if m:
                 price = m.group(1).replace(",", ".")
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"❌ DEBUG: price not found: {e}")
 
         # наличност
         status = "Наличен"
         try:
-            avail = driver.find_element(By.XPATH, "//*[contains(text(),'наличност') or contains(text(),'Наличност')]").text
+            avail_el = driver.find_element(By.XPATH, "//*[contains(text(),'наличност') or contains(text(),'Наличност')]")
+            avail = avail_el.text
+            print(f"🔎 DEBUG found availability element: {avail}")
             if "няма" in avail.lower() or "изчерпан" in avail.lower():
                 status = "Изчерпан"
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"❌ DEBUG: availability not found: {e}")
 
         return status, 1 if status == "Наличен" else 0, price
-    except Exception:
+    except Exception as e:
+        print(f"❌ DEBUG: page_has_sku_and_extract failed for {sku}: {e}")
         return None, 0, None
 
 # ========================
