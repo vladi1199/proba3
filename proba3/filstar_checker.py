@@ -2,6 +2,7 @@ import csv
 import os
 import re
 import time
+from urllib.parse import urlparse, parse_qs
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -24,7 +25,7 @@ def create_driver():
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
     opts.add_argument("--window-size=1366,900")
-    opts.add_argument("--lang=bg-BG,bg")
+    opts.add_argument("--lang=bg-BG,bg,en-US,en")
     opts.add_argument(
         "--user-agent=Mozilla/5.0 (X11; Linux x86_64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127 Safari/537.36"
@@ -50,7 +51,67 @@ def norm(s: str) -> str:
     return (s or "").strip().replace(" ", "").replace("-", "")
 
 # ========================
-# Валидиране/четене от страница на продукт
+# Помощни извличания
+# ========================
+PRICE_SELECTORS = [
+    ".price", ".product-price", ".price-value", ".final-price", ".current-price",
+    "[class*='price'] span", "[class*='price']"
+]
+
+AVAIL_HINTS = [
+    ("изчерпан", "Изчерпан"),
+    ("няма", "Изчерпан"),
+    ("out of stock", "Изчерпан"),
+    ("in stock", "Наличен"),
+    ("наличен", "Наличен"),
+    ("наличност", "Наличен"),
+]
+
+def parse_sku_from_url(url: str):
+    try:
+        q = parse_qs(urlparse(url).query)
+        v = q.get("sku", [])
+        if v:
+            return norm(v[0])
+    except Exception:
+        pass
+    return None
+
+def extract_price_generic(driver):
+    # 1) по-често срещани селектори
+    for sel in PRICE_SELECTORS:
+        try:
+            el = driver.find_element(By.CSS_SELECTOR, sel)
+            txt = el.text.strip()
+            m = re.search(r"(\d+[.,]\d{2})", txt.replace("\xa0", " "))
+            if m:
+                return m.group(1).replace(",", ".")
+        except Exception:
+            continue
+    # 2) регекс от целия HTML
+    try:
+        html = driver.page_source
+        m = re.search(r"(\d+[.,]\d{2})\s*(лв|lv|BGN|bgn)", html, re.IGNORECASE)
+        if m:
+            return m.group(1).replace(",", ".")
+    except Exception:
+        pass
+    return None
+
+def extract_availability_generic(driver):
+    # Проверка по ключови думи в видим текст
+    try:
+        body_text = driver.find_element(By.TAG_NAME, "body").text.lower()
+        for needle, status in AVAIL_HINTS:
+            if needle in body_text:
+                return status
+    except Exception:
+        pass
+    # Ако няма ясен сигнал – не гърмим, приемаме Unknown → ще изкараме qty 0
+    return "Unknown"
+
+# ========================
+# Старите селектори (ако има таблица)
 # ========================
 def find_row_for_sku(driver, sku):
     q = norm(sku)
@@ -68,7 +129,7 @@ def find_row_for_sku(driver, sku):
     except Exception:
         return None
 
-def extract_qty_and_price(row):
+def extract_qty_and_price_from_row(row):
     qty = 0
     try:
         inp = row.find_element(By.CSS_SELECTOR, "td.quantity-plus-minus input")
@@ -97,77 +158,91 @@ def extract_qty_and_price(row):
             price = m.group(1).replace(",", ".")
     return status, qty, price
 
-def page_has_sku_and_extract(driver, sku):
+# ========================
+# Централна функция за извличане от произволна продуктова страница
+# ========================
+def extract_from_product_page(driver, sku):
     q = norm(sku)
 
-    # опит 1: таблица
+    # лек скрол – понякога е нужно за дорендер
+    try:
+        driver.execute_script("window.scrollBy(0, 400);")
+    except Exception:
+        pass
+    time.sleep(0.4)
+
+    # 1) ако има таблица/ред – ползвай стария начин
     row = find_row_for_sku(driver, sku)
     if row:
-        return extract_qty_and_price(row)
+        status, qty, price = extract_qty_and_price_from_row(row)
+        return status, qty, price
 
-    # опит 2: нов шаблон – детайлна страница
+    # 2) ако URL съдържа ?sku=<КОД>, приемаме че е вярната вариация
+    url_sku = parse_sku_from_url(driver.current_url)
+    if url_sku and url_sku == q:
+        price = extract_price_generic(driver)
+        status = extract_availability_generic(driver)
+        qty = 1 if status == "Наличен" else 0
+        return status, qty, price
+
+    # 3) иначе – опитай да намериш елементи "КОД/Code/Tackle Code" и да вземеш следващата стойност
     try:
-        # debug: отпечатай първите 500 символа от HTML
-        print("🔎 DEBUG HTML snippet:")
-        print(driver.page_source[:500])
+        label = None
+        for xp in [
+            "//*[contains(translate(., 'кодCODE', 'КОДcode'), 'КОД')]",
+            "//*[contains(text(),'Code')]",
+            "//*[contains(text(),'Tackle Code')]",
+        ]:
+            els = driver.find_elements(By.XPATH, xp)
+            if els:
+                label = els[0]
+                break
+        if label:
+            # потърси текстово съдържание в следващия sibling или родителски блок
+            val_text = ""
+            try:
+                sib = label.find_element(By.XPATH, "following-sibling::*[1]")
+                val_text = sib.text.strip()
+            except Exception:
+                pass
+            if not val_text:
+                try:
+                    parent = label.find_element(By.XPATH, "./parent::*")
+                    val_text = parent.text.strip()
+                except Exception:
+                    pass
+            if q in val_text.replace(" ", ""):
+                price = extract_price_generic(driver)
+                status = extract_availability_generic(driver)
+                qty = 1 if status == "Наличен" else 0
+                return status, qty, price
+    except Exception:
+        pass
 
-        # код
-        code_el = driver.find_element(By.XPATH, "//*[contains(text(),'КОД') or contains(text(),'Code')]")
-        code_text = code_el.text
-        print(f"🔎 DEBUG found code element: {code_text}")
-
-        if q not in code_text.replace(" ", ""):
-            print(f"❌ DEBUG: SKU {q} not found in code_text: {code_text}")
-            return None, 0, None
-
-        # цена
-        price = None
-        try:
-            price_el = driver.find_element(By.CSS_SELECTOR, ".price, .product-price, .price-value")
-            print(f"🔎 DEBUG found price element: {price_el.text}")
-            m = re.search(r"(\d+[.,]\d{2})", price_el.text)
-            if m:
-                price = m.group(1).replace(",", ".")
-        except Exception as e:
-            print(f"❌ DEBUG: price not found: {e}")
-
-        # наличност
-        status = "Наличен"
-        try:
-            avail_el = driver.find_element(By.XPATH, "//*[contains(text(),'наличност') or contains(text(),'Наличност')]")
-            avail = avail_el.text
-            print(f"🔎 DEBUG found availability element: {avail}")
-            if "няма" in avail.lower() or "изчерпан" in avail.lower():
-                status = "Изчерпан"
-        except Exception as e:
-            print(f"❌ DEBUG: availability not found: {e}")
-
-        return status, 1 if status == "Наличен" else 0, price
-    except Exception as e:
-        print(f"❌ DEBUG: page_has_sku_and_extract failed for {sku}: {e}")
-        return None, 0, None
+    # Нищо надеждно
+    return None, 0, None
 
 # ========================
-# Опити за отваряне на продукт
+# Отваряне по директни URL варианти
 # ========================
-def open_direct_with_param(driver, sku) -> bool:
+def open_direct_with_param(driver, sku):
     q = norm(sku)
     candidates = [
         f"https://filstar.com/products?sku={q}",
-        f"https://filstar.com/bg/products?sku={q}",
         f"https://filstar.com/product?sku={q}",
+        f"https://filstar.com/bg/products?sku={q}",
         f"https://filstar.com/bg/product?sku={q}",
     ]
     for url in candidates:
         driver.get(url)
         click_cookies_if_any(driver)
-        time.sleep(0.7)
-        status, qty, price = page_has_sku_and_extract(driver, sku)
+        time.sleep(0.8)
+        status, qty, price = extract_from_product_page(driver, sku)
         if status is not None:
-            print(f"  ✅ Намерен продукт (директно): {url}")
-            print(f"     → Статус: {status} | Бройки: {qty} | Цена: {price} лв.")
-            return True
-    return False
+            print(f"  ✅ Отворен продукт: {url}")
+            print(f"     → Статус: {status} | Бройки: {qty} | Цена: {price if price else '—'}")
+            return status, qty, price
+    return None, 0, None
 
 # ========================
 # CSV I/O
@@ -205,14 +280,13 @@ def main():
         for sku in skus:
             print(f"➡️ Обработвам SKU: {sku}")
 
-            if open_direct_with_param(driver, sku):
-                status, qty, price = page_has_sku_and_extract(driver, sku)
-                results.append([sku, status, qty, price])
+            status, qty, price = open_direct_with_param(driver, sku)
+            if status is None:
+                print(f"❌ Не намерих валиден продукт за {sku}")
+                not_found.append(sku)
                 continue
 
-            print(f"❌ Не намерих валиден продукт за {sku}")
-            not_found.append(sku)
-
+            results.append([sku, status, qty, price if price else ""])
     finally:
         driver.quit()
 
