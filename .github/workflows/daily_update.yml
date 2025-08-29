@@ -1,9 +1,9 @@
 name: Update XML Daily
 
-on:
-  schedule:
-    - cron: '0 0 * * *'  # всеки ден 00:00 UTC
-  workflow_dispatch:
+#on:
+  #schedule:
+   # - cron: '0 0 * * *'  # всеки ден 00:00 UTC
+ # workflow_dispatch:
 
 permissions:
   contents: write
