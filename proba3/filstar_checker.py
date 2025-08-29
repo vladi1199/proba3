@@ -13,7 +13,7 @@ from selenium.webdriver.support import expected_conditions as EC
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SKU_CSV = os.path.join(BASE_DIR, "sku_list_filstar.csv")
 RES_CSV = os.path.join(BASE_DIR, "results_filstar.csv")
-NF_CSV = os.path.join(BASE_DIR, "not_found_filstar.csv")
+NF_CSV  = os.path.join(BASE_DIR, "not_found_filstar.csv")
 
 # ========================
 # WebDriver
@@ -29,6 +29,9 @@ def create_driver():
         "--user-agent=Mozilla/5.0 (X11; Linux x86_64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127 Safari/537.36"
     )
+    # малко по-"човешки" профил
+    opts.add_experimental_option("excludeSwitches", ["enable-automation"])
+    opts.add_experimental_option("useAutomationExtension", False)
     return webdriver.Chrome(options=opts)
 
 def click_cookies_if_any(driver):
@@ -62,7 +65,7 @@ def find_row_for_sku(driver, sku):
         return driver.find_element(By.XPATH, f"//tr[.//td[contains(normalize-space(),'{q}')]]")
     except Exception:
         pass
-    # 3) елемент с текст SKU -> най-близкия <tr>
+    # 3) произволен елемент с текст SKU -> най-близкия <tr>
     try:
         cell = driver.find_element(By.XPATH, f"//*[contains(normalize-space(),'{q}')]")
         return cell.find_element(By.XPATH, "./ancestor::tr")
@@ -101,8 +104,8 @@ def extract_qty_and_price(row):
     return status, qty, price
 
 def page_has_sku_and_extract(driver, sku):
-    """Връща tuple (status, qty, price) ако намери реда, иначе (None, 0, None)."""
-    # лек скрол – често таблицата се дорендерира
+    """Връща (status, qty, price) ако намери реда за SKU, иначе (None, 0, None)."""
+    # кратък скрол – таблицата понякога се дорендерира
     try:
         driver.execute_script("window.scrollBy(0, 400);")
     except Exception:
@@ -152,13 +155,19 @@ def open_via_autosuggest(driver, sku) -> bool:
     if not search:
         return False
 
-    # пишем плавно, за да се появи автосугест
-    search.clear()
-    for ch in q:
-        search.send_keys(ch)
-        time.sleep(0.05)
+    # скрол и фокус преди писане
+    try:
+        driver.execute_script("arguments[0].scrollIntoView(true);", search)
+        driver.execute_script("arguments[0].focus();", search)
+        search.click()
+    except Exception:
+        pass
 
-    # изчакай да се появят предложения
+    # въведи SKU наведнъж (автосугест се показва и така)
+    search.clear()
+    search.send_keys(q)
+
+    # изчакай предложенията
     try:
         WebDriverWait(driver, 8).until(
             EC.presence_of_all_elements_located((By.CSS_SELECTOR, "a[href]"))
@@ -166,7 +175,7 @@ def open_via_autosuggest(driver, sku) -> bool:
     except Exception:
         pass
 
-    # 1) търсим директно линк с ?sku=<q>
+    # търсим линк с ?sku=<q>
     target = None
     for el in driver.find_elements(By.CSS_SELECTOR, "a[href]"):
         href = el.get_attribute("href") or ""
@@ -174,7 +183,7 @@ def open_via_autosuggest(driver, sku) -> bool:
             target = el
             break
 
-    # 2) ако няма – взимаме първия смислен линк в падащото меню
+    # fallback: първи видим линк (ако автосугестът е различен)
     if not target:
         links = driver.find_elements(By.CSS_SELECTOR, "a[href]")
         if links:
@@ -183,7 +192,14 @@ def open_via_autosuggest(driver, sku) -> bool:
     if not target:
         return False
 
-    driver.execute_script("arguments[0].click();", target)
+    try:
+        driver.execute_script("arguments[0].click();", target)
+    except Exception:
+        try:
+            target.click()
+        except Exception:
+            return False
+
     time.sleep(0.8)
 
     status, qty, price = page_has_sku_and_extract(driver, sku)
@@ -236,7 +252,7 @@ def main():
                 results.append([sku, status, qty, price])
                 continue
 
-            # Опит 2: автосугест
+            # Опит 2: автосугест (емулация на човешко търсене)
             if open_via_autosuggest(driver, sku):
                 status, qty, price = page_has_sku_and_extract(driver, sku)
                 results.append([sku, status, qty, price])
