@@ -1,6 +1,6 @@
 name: Update XML Daily
 
-#on:
+on:
   #schedule:
    # - cron: '0 0 * * *'  # всеки ден 00:00 UTC
  # workflow_dispatch:
