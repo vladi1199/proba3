@@ -4,6 +4,7 @@ import re
 import time
 from urllib.parse import urljoin
 
+import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -11,11 +12,17 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
-# ---------------- Пътища ----------------
+# ---------------- Константи и пътища ----------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SKU_CSV = os.path.join(BASE_DIR, "sku_list_filstar.csv")
 RES_CSV = os.path.join(BASE_DIR, "results_filstar.csv")
 NF_CSV  = os.path.join(BASE_DIR, "not_found_filstar.csv")
+
+HTTP_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/127 Safari/537.36",
+    "Accept-Language": "bg-BG,bg;q=0.9,en-US;q=0.8,en;q=0.7",
+}
 
 
 # ---------------- WebDriver ----------------
@@ -26,10 +33,6 @@ def create_driver():
     opts.add_argument("--disable-dev-shm-usage")
     opts.add_argument("--window-size=1440,1400")
     opts.add_argument("--lang=bg-BG,bg,en-US,en")
-    opts.add_argument(
-        "--user-agent=Mozilla/5.0 (X11; Linux x86_64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127 Safari/537.36"
-    )
     opts.add_experimental_option("excludeSwitches", ["enable-automation"])
     opts.add_experimental_option("useAutomationExtension", False)
 
@@ -53,8 +56,23 @@ def click_cookies_if_any(driver):
             pass
 
 
-def norm(s):
-    return str(s).strip()
+# ---------------- Утилити ----------------
+def norm(s): return str(s).strip()
+
+def save_debug_html_text(text, sku, tag):
+    try:
+        path = os.path.join(BASE_DIR, f"debug_{sku}_{tag}.html")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
+        print(f"   🐞 Записах HTML за {sku}: {path}")
+    except Exception:
+        pass
+
+def save_debug_html(driver, sku, tag):
+    try:
+        save_debug_html_text(driver.page_source, sku, tag)
+    except Exception:
+        pass
 
 
 # ---------------- Търсене на продукт ----------------
@@ -86,72 +104,38 @@ def find_product_link_via_search(driver, sku) -> str | None:
     return None
 
 
-# ---------------- Помощни: log и HTML dump ----------------
-def save_debug_html(driver, sku, tag="page"):
-    try:
-        path = os.path.join(BASE_DIR, f"debug_{sku}_{tag}.html")
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(driver.page_source)
-        print(f"   🐞 Записах HTML за {sku}: {path}")
-    except Exception:
-        pass
-
-
-# ---------------- Lazy-load скрол до SKU ред ----------------
-def scroll_until_row_with_sku(driver, sku, max_steps=20, step_px=800, pause=0.35):
-    """
-    Скролва страницата на стъпки, докато редът с td.td-sky == SKU се появи в DOM
-    или се изчерпат опитите. Връща True ако открие реда.
-    """
+# ---------------- Извличане през Selenium ----------------
+def scroll_until_row_with_sku(driver, sku, max_steps=24, step_px=900, pause=0.35):
     q = norm(sku)
     xp = f"//table[@id='fast-order-table']//tr[td[contains(@class,'td-sky')][contains(normalize-space(),'{q}')]]"
-    for i in range(max_steps):
-        # виж дали вече е в DOM
+    for _ in range(max_steps):
         try:
             row = driver.find_elements(By.XPATH, xp)
             if row:
-                print(f"   🔄 DEBUG: ред със SKU {q} се появи след {i} скрол(а).")
                 return True
         except Exception:
             pass
-
-        # скрол надолу
         try:
             driver.execute_script(f"window.scrollBy(0, {step_px});")
-        except Exception:
-            pass
-
-        # тригерирай събитие scroll (някои Vue/Stimulus слушат това)
-        try:
             driver.execute_script("window.dispatchEvent(new Event('scroll'));")
         except Exception:
             pass
-
         time.sleep(pause)
-
-    # финален опит – до дъно
+    # финално – до дъното
     try:
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
         driver.execute_script("window.dispatchEvent(new Event('scroll'));")
-        time.sleep(pause + 0.4)
-        row = driver.find_elements(By.XPATH, xp)
-        if row:
-            print(f"   🔄 DEBUG: редът се появи след финален скрол до дъното.")
-            return True
     except Exception:
         pass
+    time.sleep(pause + 0.4)
+    try:
+        row = driver.find_elements(By.XPATH, xp)
+        return bool(row)
+    except Exception:
+        return False
 
-    print(f"   🔄 DEBUG: ред със SKU {q} не се появи след скрол.")
-    return False
 
-
-# ---------------- Извличане от таблицата ----------------
 def find_row_by_sku_in_table(driver, sku):
-    """
-    Обхожда всички редове в #fast-order-table tbody и търси клетка td.td-sky,
-    чийто текст == SKU (след нормализация).
-    Връща (row_el, code_text) или (None, None).
-    """
     q = norm(sku)
     try:
         tbody = WebDriverWait(driver, 12).until(
@@ -167,9 +151,9 @@ def find_row_by_sku_in_table(driver, sku):
         try:
             code_td = row.find_element(By.CSS_SELECTOR, "td.td-sky")
             code_text = (code_td.text or "").replace("\xa0", " ").strip()
-            code_text_digits = re.sub(r"\D+", "", code_text)
-            print(f"      • ред {idx}: code_cell='{code_text}' (digits='{code_text_digits}')")
-            if code_text_digits == q:
+            code_digits = re.sub(r"\D+", "", code_text)
+            print(f"      • ред {idx}: code_cell='{code_text}' (digits='{code_digits}')")
+            if code_digits == q:
                 print(f"      ✅ съвпадение по SKU в ред {idx}")
                 return row, code_text
         except Exception:
@@ -178,54 +162,100 @@ def find_row_by_sku_in_table(driver, sku):
     return None, None
 
 
-def extract_normal_price_from_row(row_el):
-    """
-    Нормална цена в лева:
-      1) ако има <strike>… лв. → връща него (стара/нормална цена)
-      2) иначе взима първата '… лв.' от ценовата клетка (td с 'ЦЕНА НА ДРЕБНО')
-      3) fallback – всяка '… лв.' в целия ред
-    """
-    # 1) strike
+def extract_price_from_row_via_selenium(row_el):
+    # 1) нормалната (стара) цена в <strike>
     try:
-        strikes = row_el.find_elements(By.TAG_NAME, "strike")
-        for st in strikes:
+        for st in row_el.find_elements(By.TAG_NAME, "strike"):
             raw = (st.text or "").replace("\xa0", " ")
             m = re.search(r"(\d+[.,]?\d*)\s*лв", raw, flags=re.IGNORECASE)
             if m:
-                price = m.group(1).replace(",", ".")
-                print(f"      🔎 DEBUG: strike price='{price}'")
-                return price
+                return m.group(1).replace(",", ".")
     except Exception:
         pass
 
-    # 2) целева клетка "ЦЕНА НА ДРЕБНО"
+    # 2) ценова клетка „ЦЕНА НА ДРЕБНО“ (вътрешен текст)
     try:
         price_td = row_el.find_element(By.XPATH, ".//td[.//span[contains(.,'ЦЕНА НА ДРЕБНО')]]")
         txt = (price_td.text or "").replace("\xa0", " ")
-        print(f"      🔎 DEBUG: price_td_text='{txt[:80]}'")
         m = re.search(r"(\d+[.,]?\d*)\s*лв", txt, flags=re.IGNORECASE)
         if m:
-            price = m.group(1).replace(",", ".")
-            return price
+            return m.group(1).replace(",", ".")
+        # 2b) ако текстът е празен – пробвай innerHTML
+        html = price_td.get_attribute("innerHTML") or ""
+        m2 = re.search(r"(\d+[.,]?\d*)\s*(?:&nbsp;)?лв", html, flags=re.IGNORECASE)
+        if m2:
+            return m2.group(1).replace(",", ".")
     except Exception:
         pass
 
-    # 3) fallback: всяка лв. цена в целия ред
+    # 3) fallback: първата „… лв.“ в целия ред (text или innerHTML)
     try:
         txt = (row_el.text or "").replace("\xa0", " ")
-        print(f"      🔎 DEBUG: row_text_snippet='{txt[:120]}'")
         m = re.search(r"(\d+[.,]?\d*)\s*лв", txt, flags=re.IGNORECASE)
         if m:
-            price = m.group(1).replace(",", ".")
-            return price
+            return m.group(1).replace(",", ".")
+        html = row_el.get_attribute("innerHTML") or ""
+        m2 = re.search(r"(\d+[.,]?\d*)\s*(?:&nbsp;)?лв", html, flags=re.IGNORECASE)
+        if m2:
+            return m2.group(1).replace(",", ".")
     except Exception:
         pass
 
     return None
 
 
+# ---------------- Fallback: извличане през requests (без JS) ----------------
+def extract_price_via_requests(product_url, sku):
+    """Парсва суровия HTML на страницата и намира цена за конкретния SKU."""
+    try:
+        r = requests.get(product_url, headers=HTTP_HEADERS, timeout=20)
+        r.raise_for_status()
+        html = r.text
+        # запази дебъг при нужда
+        # save_debug_html_text(html, sku, "requests_page")
+
+        # изолирай tbody на таблицата
+        m_tbody = re.search(
+            r'<table[^>]*id=["\']fast-order-table["\'][^>]*>.*?<tbody>(.*?)</tbody>',
+            html, re.S | re.I
+        )
+        if not m_tbody:
+            return None
+        tbody = m_tbody.group(1)
+
+        # всички редове
+        rows = re.findall(r'<tr[^>]*class=["\']table-row-scroll["\'][^>]*>(.*?)</tr>',
+                          tbody, re.S | re.I)
+        for row_html in rows:
+            # колона КОД
+            m_code = re.search(r'class=["\'][^"\']*td-sky[^"\']*["\'][^>]*>(.*?)</td>',
+                               row_html, re.S | re.I)
+            if not m_code:
+                continue
+            code_text = re.sub(r"<[^>]*>", "", m_code.group(1))
+            code_digits = re.sub(r"\D+", "", code_text)
+            if code_digits != str(sku):
+                continue
+
+            # цена (нормална): първо strike, иначе първата '... лв'
+            m_strike = re.search(r"<strike[^>]*>(.*?)</strike>", row_html, re.S | re.I)
+            if m_strike:
+                s_txt = re.sub(r"<[^>]*>", "", m_strike.group(1))
+                m_p = re.search(r"(\d+[.,]?\d*)\s*лв", s_txt, re.I)
+                if m_p:
+                    return m_p.group(1).replace(",", ".")
+
+            m_any = re.search(r"(\d+[.,]?\d*)\s*(?:&nbsp;)?лв", row_html, re.I)
+            if m_any:
+                return m_any.group(1).replace(",", ".")
+
+        return None
+    except Exception:
+        return None
+
+
+# ---------------- Комбинирано извличане от продуктова страница ----------------
 def scrape_product_page(driver, product_url, sku):
-    """Зарежда продукта, скролва докато се появи редът за SKU, после вади цена/статус."""
     driver.get(product_url)
     click_cookies_if_any(driver)
 
@@ -235,22 +265,24 @@ def scrape_product_page(driver, product_url, sku):
     except Exception:
         pass
 
-    # скролвай, докато редът със SKU се появи (lazy-load)
-    scroll_until_row_with_sku(driver, sku, max_steps=24, step_px=900, pause=0.35)
+    # скрол (lazy-load)
+    scroll_until_row_with_sku(driver, sku)
 
     print(f"   🔎 TITLE: {driver.title.strip()[:120]}")
     print(f"   🔎 URL:   {driver.current_url}")
 
-    row, code_text = find_row_by_sku_in_table(driver, sku)
-    if not row:
-        print("   ⚠️ DEBUG: не намерих ред за това SKU в таблицата дори след скрол.")
-        save_debug_html(driver, sku, tag="no_row")
-        return "Unknown", 0, None
+    # опит 1: Selenium
+    row, _ = find_row_by_sku_in_table(driver, sku)
+    price = None
+    if row:
+        price = extract_price_from_row_via_selenium(row)
 
-    price = extract_normal_price_from_row(row)
+    # опит 2 (fallback): requests, ако Selenium не намери ред/цена
     if price is None:
-        print("   ⚠️ DEBUG: не успях да извлека цена от реда – dump-вам HTML.")
-        save_debug_html(driver, sku, tag="no_price")
+        print("   🔁 Fallback: извличам през requests()…")
+        price = extract_price_via_requests(product_url, sku)
+        if price is None:
+            save_debug_html(driver, sku, tag="no_price_or_row")
 
     status, qty = "Unknown", 0
     return status, qty, price
