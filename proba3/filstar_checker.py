@@ -29,7 +29,7 @@ def create_driver():
         "--user-agent=Mozilla/5.0 (X11; Linux x86_64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127 Safari/537.36"
     )
-    # малко по-"човешки" профил
+    # по-"човешки" профил
     opts.add_experimental_option("excludeSwitches", ["enable-automation"])
     opts.add_experimental_option("useAutomationExtension", False)
     return webdriver.Chrome(options=opts)
@@ -121,91 +121,93 @@ def page_has_sku_and_extract(driver, sku):
 # Опити за отваряне на продукт
 # ========================
 def open_direct_with_param(driver, sku) -> bool:
-    """Опит 1: директно products?sku=<код>."""
-    url = f"https://filstar.com/products?sku={norm(sku)}"
-    driver.get(url)
-    click_cookies_if_any(driver)
-    time.sleep(0.7)
-    status, qty, price = page_has_sku_and_extract(driver, sku)
-    if status is not None:
-        print(f"  ✅ Намерен продукт (директно): {url}")
-        print(f"     → Статус: {status} | Бройки: {qty} | Цена: {price} лв.")
-        return True
+    """Опит 1: пробваме няколко директни варианта с ?sku=<код>."""
+    q = norm(sku)
+    candidates = [
+        f"https://filstar.com/products?sku={q}",
+        f"https://filstar.com/bg/products?sku={q}",
+        f"https://filstar.com/product?sku={q}",
+        f"https://filstar.com/bg/product?sku={q}",
+    ]
+    for url in candidates:
+        driver.get(url)
+        click_cookies_if_any(driver)
+        time.sleep(0.7)
+        status, qty, price = page_has_sku_and_extract(driver, sku)
+        if status is not None:
+            print(f"  ✅ Намерен продукт (директно): {url}")
+            print(f"     → Статус: {status} | Бройки: {qty} | Цена: {price} лв.")
+            return True
     return False
 
-def open_via_autosuggest(driver, sku) -> bool:
-    """Опит 2: начална страница → пишем SKU → кликаме предложението с ?sku=."""
+def open_via_autosuggest_js(driver, sku) -> bool:
+    """
+    Опит 2: начална страница → попълваме полето с JS (без send_keys),
+    диспатчваме 'input' събитие, чакаме линк с ?sku=<код> и навигираме към него.
+    """
     q = norm(sku)
     driver.get("https://filstar.com/")
     click_cookies_if_any(driver)
 
-    # поле за търсене
-    search = None
-    for how, sel in [
-        (By.CSS_SELECTOR, "input[type='search']"),
-        (By.CSS_SELECTOR, "input[name='term']"),
-        (By.CSS_SELECTOR, "input[name='q']"),
-        (By.XPATH, "//input[contains(@placeholder,'Търси') or contains(@placeholder,'търси')]"),
-    ]:
-        try:
-            search = WebDriverWait(driver, 6).until(EC.presence_of_element_located((how, sel)))
-            break
-        except Exception:
-            continue
-    if not search:
+    # инжектираме стойността в полето + input event (няколко възможни селектора)
+    js = """
+    const q = arguments[0];
+    const sels = [
+      "input[type='search']",
+      "input[name='term']",
+      "input[name='q']",
+      "input[placeholder*='Търси']",
+      "input[placeholder*='търси']"
+    ];
+    let box = null;
+    for (const s of sels) {
+      const el = document.querySelector(s);
+      if (el) { box = el; break; }
+    }
+    if (!box) return "NO_INPUT";
+    box.value = q;
+    box.dispatchEvent(new Event('input', {bubbles:true}));
+    return "OK";
+    """
+    res = driver.execute_script(js, q)
+    if res == "NO_INPUT":
         return False
 
-    # скрол и фокус преди писане
-    try:
-        driver.execute_script("arguments[0].scrollIntoView(true);", search)
-        driver.execute_script("arguments[0].focus();", search)
-        search.click()
-    except Exception:
-        pass
+    # изчакай до 8s да се появи линк с ?sku=<q>
+    href = None
+    for _ in range(40):
+        try:
+            links = driver.find_elements(By.CSS_SELECTOR, "a[href]")
+            for el in links:
+                h = el.get_attribute("href") or ""
+                if f"?sku={q}" in h or f"&sku={q}" in h:
+                    href = h
+                    break
+            if href:
+                break
+        except Exception:
+            pass
+        time.sleep(0.2)
 
-    # въведи SKU наведнъж (автосугест се показва и така)
-    search.clear()
-    search.send_keys(q)
+    # ако не е открит директен линк, пробваме първия смислен линк под полето
+    if not href:
+        try:
+            links = driver.find_elements(By.CSS_SELECTOR, "a[href]")
+            if links:
+                href = links[0].get_attribute("href")
+        except Exception:
+            href = None
 
-    # изчакай предложенията
-    try:
-        WebDriverWait(driver, 8).until(
-            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "a[href]"))
-        )
-    except Exception:
-        pass
-
-    # търсим линк с ?sku=<q>
-    target = None
-    for el in driver.find_elements(By.CSS_SELECTOR, "a[href]"):
-        href = el.get_attribute("href") or ""
-        if f"?sku={q}" in href or f"&sku={q}" in href:
-            target = el
-            break
-
-    # fallback: първи видим линк (ако автосугестът е различен)
-    if not target:
-        links = driver.find_elements(By.CSS_SELECTOR, "a[href]")
-        if links:
-            target = links[0]
-
-    if not target:
+    if not href:
         return False
 
-    try:
-        driver.execute_script("arguments[0].click();", target)
-    except Exception:
-        try:
-            target.click()
-        except Exception:
-            return False
-
+    # навигирай към продукта
+    driver.get(href)
     time.sleep(0.8)
-
     status, qty, price = page_has_sku_and_extract(driver, sku)
     if status is not None:
         current = driver.current_url
-        print(f"  ✅ Намерен продукт (автосугест): {current}")
+        print(f"  ✅ Намерен продукт (автосугест/JS): {current}")
         print(f"     → Статус: {status} | Бройки: {qty} | Цена: {price} лв.")
         return True
     return False
@@ -246,14 +248,14 @@ def main():
         for sku in skus:
             print(f"➡️ Обработвам SKU: {sku}")
 
-            # Опит 1: директен URL с ?sku=
+            # Опит 1: директни URL-и с ?sku=
             if open_direct_with_param(driver, sku):
                 status, qty, price = page_has_sku_and_extract(driver, sku)
                 results.append([sku, status, qty, price])
                 continue
 
-            # Опит 2: автосугест (емулация на човешко търсене)
-            if open_via_autosuggest(driver, sku):
+            # Опит 2: автосугест чрез JS (без send_keys)
+            if open_via_autosuggest_js(driver, sku):
                 status, qty, price = page_has_sku_and_extract(driver, sku)
                 results.append([sku, status, qty, price])
                 continue
