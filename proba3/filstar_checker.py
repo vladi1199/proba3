@@ -1,6 +1,7 @@
 import csv
 import os
 import re
+import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
@@ -17,19 +18,21 @@ base_path = os.path.dirname(os.path.abspath(__file__))
 # Конфигурация на драйвъра
 def create_driver():
     options = Options()
-    # по-стабилен headless в GitHub Actions
     options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--window-size=1366,768")
+    # лек UA, защото някои сайтове режат headless
+    options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127 Safari/537.36")
+    options.add_argument("--lang=bg-BG,bg")
     return webdriver.Chrome(options=options)
 
 # Затваряне на cookie банера (ако има)
 def click_cookies_if_any(driver):
     candidates = [
+        (By.CSS_SELECTOR, "#onetrust-accept-btn-handler"),
         (By.XPATH, "//button[contains(., 'Приемам')]"),
         (By.XPATH, "//*[contains(., 'Приемам бисквитките')]"),
-        (By.CSS_SELECTOR, "#onetrust-accept-btn-handler"),
         (By.XPATH, "//button[contains(., 'Accept')]"),
     ]
     for how, what in candidates:
@@ -39,43 +42,79 @@ def click_cookies_if_any(driver):
         except Exception:
             pass
 
-# Намираме URL на продукта по SKU (само търсачката е подменена)
+# --- ПОМЕНЕНО САМО ТУК ---
+# Намираме URL на продукта по SKU (новата търсачка + по-широки селектори)
 def find_product_url(driver, sku):
-    search_url = f"https://filstar.com/search?term={sku}"
-    driver.get(search_url)
+    def variants(s):
+        s = (s or "").strip().replace(" ", "").replace("-", "")
+        v2 = s.lstrip("0") or s
+        return [s] if v2 == s else [s, v2]
 
-    # затвори cookie банера, ако пречи
-    click_cookies_if_any(driver)
-
-    try:
-        # изчакай плочките с продукти (новите селектори)
-        WebDriverWait(driver, 15).until(
-            EC.any_of(
-                EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".product-item a[href], a.product-item-link")),
-                EC.presence_of_element_located((By.XPATH, "//*[contains(.,'Няма резултати') or contains(.,'няма резултати')]"))
-            )
-        )
-
-        # вземи линковете от плочките
-        links = driver.find_elements(By.CSS_SELECTOR, ".product-item a[href], a.product-item-link")
-        if not links:
-            return None
-
-        # ако има линк, чиито href/текст съдържат SKU – върни него
+    def get_candidate_links():
+        # събира възможни линкове от плочките/резултатите
+        selectors = [
+            ".product-item a[href]",
+            "a.product-item-link",
+            "a[href*='/products/']",
+            "a[href*='/product']",
+            "a[href*='/bg/']",
+        ]
+        links = []
+        for sel in selectors:
+            links.extend(driver.find_elements(By.CSS_SELECTOR, sel))
+        # махни дубликати
+        uniq = []
+        seen = set()
         for el in links:
             href = el.get_attribute("href") or ""
+            if href and href not in seen:
+                seen.add(href)
+                uniq.append(el)
+        return uniq
+
+    for q in variants(sku):
+        search_url = f"https://filstar.com/search?term={q}"
+        driver.get(search_url)
+        click_cookies_if_any(driver)
+
+        # изчакай нещо смислено на страницата
+        try:
+            WebDriverWait(driver, 12).until(
+                EC.any_of(
+                    EC.presence_of_all_elements_located((By.CSS_SELECTOR, ".product-item, .products, .search-results")),
+                    EC.presence_of_element_located((By.XPATH, "//*[contains(.,'Няма резултати') or contains(.,'няма резултати')]"))
+                )
+            )
+        except Exception:
+            # последен шанс – кратко изчакване
+            time.sleep(1.0)
+
+        links = get_candidate_links()
+        if not links:
+            # понякога картите имат бутон „Преглед“ – пробвай да кликнеш първия
+            try:
+                btn = driver.find_element(By.XPATH, "//a[contains(.,'Преглед') or contains(.,'Виж')]")
+                href = btn.get_attribute("href")
+                if href: 
+                    return href
+            except Exception:
+                pass
+            continue
+
+        # 1) предпочети линк, който съдържа SKU (или без водещи нули) в href/текста
+        for el in links:
+            href = (el.get_attribute("href") or "")
             txt = (el.text or "").strip()
-            if sku in href or sku in txt:
+            if q in href or q in txt:
                 return href
 
-        # иначе върни първия резултат
+        # 2) иначе върни първия резултат
         return links[0].get_attribute("href")
 
-    except Exception as e:
-        print(f"❌ Продукт с SKU {sku} не е намерен: {e}")
-        return None
+    return None
+# --- КРАЙ НА ПРОМЯНАТА ---
 
-# Проверка на наличността, бройката и цената на продукта (НЕпроменяна логика)
+# Проверка на наличността, бройката и цената на продукта (старият ти код)
 def check_availability_and_price(driver, sku):
     try:
         try:
@@ -96,7 +135,7 @@ def check_availability_and_price(driver, sku):
             normal_price_el = price_element.find_element(By.TAG_NAME, "strike")
             raw_price = normal_price_el.text.strip()
             price = re.findall(r'\d+\.\d+', raw_price)[0]
-        except:
+        except Exception:
             # Ако няма <strike>, взимаме стандартната цена
             price_text = price_element.text.strip()
             price_parts = price_text.split()
@@ -149,6 +188,8 @@ def main():
         if product_url:
             print(f"  ✅ Намерен продукт: {product_url}")
             driver.get(product_url)
+            # кратко изчакване за JS
+            time.sleep(0.5)
             status, qty, price = check_availability_and_price(driver, sku)
             
             if status is None or price is None:
