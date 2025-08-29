@@ -86,10 +86,37 @@ def find_product_link_via_search(driver, sku) -> str | None:
     return None
 
 
-# ---------------- Помощни: цена/наличност от РЕД ----------------
+# ---------------- Помощни: намиране на ред и цена ----------------
+def find_variant_row_by_sku(driver, sku):
+    """
+    Намира <tr>, където колоната КОД (td.scrollable-td.td-sky) съдържа точно SKU.
+    Това съвпада с твоя HTML.
+    """
+    q = norm(sku)
+    xps = [
+        f"//table[@id='fast-order-table']//tr[td[contains(@class,'td-sky')][contains(normalize-space(),'{q}')]]",
+        f"//tr[td[contains(@class,'td-sky')][contains(normalize-space(),'{q}')]]",
+    ]
+    for xp in xps:
+        try:
+            return driver.find_element(By.XPATH, xp)
+        except Exception:
+            continue
+    # последен fallback – търси клетка с КОД и се върни към реда
+    try:
+        cell = driver.find_element(By.XPATH, f"//td[contains(@class,'td-sky')][contains(normalize-space(),'{q}')]")
+        return cell.find_element(By.XPATH, "./ancestor::tr")
+    except Exception:
+        return None
+
+
 def extract_normal_price_from_row(row_el):
-    """От реда на таблицата взима НЕНАМАЛЕНАТА цена от <strike>… лв.; fallback – друга лв. цена в реда."""
-    # 1) <strike> … лв.
+    """
+    Взима НОРМАЛНАТА цена в лева от реда:
+      - ако има <strike>… лв. → това е нормалната (стара) цена
+      - иначе вземи видимата лв. цена в реда (както е в дадения HTML – без намаление)
+    """
+    # 1) <strike>… лв.
     try:
         strikes = row_el.find_elements(By.TAG_NAME, "strike")
         for st in strikes:
@@ -99,7 +126,18 @@ def extract_normal_price_from_row(row_el):
                 return m.group(1).replace(",", ".")
     except Exception:
         pass
-    # 2) друга цена в реда (лв.)
+
+    # 2) целевата клетка "ЦЕНА НА ДРЕБНО" → вземи лв. от вътрешния div
+    try:
+        price_td = row_el.find_element(By.XPATH, ".//td[.//span[contains(.,'ЦЕНА НА ДРЕБНО')]]")
+        txt = price_td.text.replace("\xa0", " ")
+        m = re.search(r"(\d+[.,]?\d*)\s*лв", txt, flags=re.IGNORECASE)
+        if m:
+            return m.group(1).replace(",", ".")
+    except Exception:
+        pass
+
+    # 3) fallback: всяка лв. цена в реда
     try:
         txt = row_el.text.replace("\xa0", " ")
         m = re.search(r"(\d+[.,]?\d*)\s*лв", txt, flags=re.IGNORECASE)
@@ -107,15 +145,18 @@ def extract_normal_price_from_row(row_el):
             return m.group(1).replace(",", ".")
     except Exception:
         pass
+
     return None
 
 
 def extract_qty_status_from_row(row_el):
-    """Изважда qty/status от реда по типични атрибути и текст."""
+    """
+    Количествата/статусът не са видими за анонимни потребители в този шаблон.
+    Все пак търсим текстови индикатори; иначе връщаме Unknown/0.
+    """
     status = "Unknown"
     qty = 0
 
-    # текстови индикатори
     try:
         t = row_el.text.lower()
         if any(x in t for x in ["изчерпан", "няма", "out of stock"]):
@@ -125,64 +166,7 @@ def extract_qty_status_from_row(row_el):
     except Exception:
         pass
 
-    # атрибути по input/елементи
-    try:
-        elements = row_el.find_elements(By.CSS_SELECTOR, "input, button, div, span")
-        for el in elements[:400]:
-            for attr in ["data-max-qty-1", "data-max-qty", "data-available-qty", "data-stock", "max", "data-qty"]:
-                v = el.get_attribute(attr)
-                if v and v.isdigit():
-                    qty = max(qty, int(v))
-    except Exception:
-        pass
-
-    if status == "Unknown" and qty > 0:
-        status = "Наличен"
-    if status == "Наличен" and qty == 0:
-        qty = 1
     return status, qty
-
-
-# ---------------- Работа с продукт страницата ----------------
-def maybe_expand_variants(driver):
-    """Кликва бутони/линкове, които показват таблица с разновидности (ако има такива)."""
-    texts = ["разновид", "вариант", "виж всички", "покажи", "повече"]
-    for sel in ["button", "a", "[role='button']"]:
-        try:
-            els = driver.find_elements(By.CSS_SELECTOR, sel)
-            for el in els:
-                try:
-                    label = (el.text or "").strip().lower()
-                    if any(t in label for t in texts):
-                        el.click()
-                        time.sleep(0.5)
-                except Exception:
-                    continue
-        except Exception:
-            pass
-
-
-def find_variant_row_by_sku(driver, sku):
-    """Намира <tr>, чийто текст съдържа SKU (с normalize-space)."""
-    q = norm(sku)
-    xps = [
-        f"//tr[.//td[contains(normalize-space(),'{q}')]]",
-        f"//tr[contains(normalize-space(),'{q}')]",
-    ]
-    for xp in xps:
-        try:
-            return driver.find_element(By.XPATH, xp)
-        except Exception:
-            continue
-    try:
-        cell = driver.find_element(By.XPATH, f"//*[contains(normalize-space(),'{q}')]")
-        try:
-            return cell.find_element(By.XPATH, "./ancestor::tr")
-        except Exception:
-            pass
-    except Exception:
-        pass
-    return None
 
 
 def save_debug_html(driver, sku):
@@ -196,7 +180,7 @@ def save_debug_html(driver, sku):
 
 
 def scrape_product_page(driver, product_url, sku):
-    """Зарежда продукта, показва разновидности (ако има), намира реда по SKU и вади цена/наличност от него."""
+    """Зарежда продукта, намира реда по SKU и вади цена/статус."""
     driver.get(product_url)
     click_cookies_if_any(driver)
     time.sleep(1.0)
@@ -204,13 +188,10 @@ def scrape_product_page(driver, product_url, sku):
         driver.execute_script("window.scrollBy(0, 400);")
     except Exception:
         pass
-    time.sleep(0.4)
+    time.sleep(0.3)
 
     print(f"   🔎 TITLE: {driver.title.strip()[:120]}")
     print(f"   🔎 URL:   {driver.current_url}")
-
-    maybe_expand_variants(driver)
-    time.sleep(0.4)
 
     row = find_variant_row_by_sku(driver, sku)
     if not row:
@@ -232,12 +213,9 @@ def read_sku_codes(path):
             if not row:
                 continue
             val = (row[0] or "").strip()
-            if not val:
-                continue
-            if val.lower() == "sku":
+            if not val or val.lower() == "sku":
                 continue
             skus.append(val)
-    # Debug: покажи първите няколко прочетени SKU
     if skus:
         print(f"   🧾 SKUs loaded ({len(skus)}): {', '.join(skus[:5])}{' ...' if len(skus)>5 else ''}")
     else:
@@ -282,10 +260,8 @@ def main():
             status, qty, price = scrape_product_page(driver, product_url, sku)
             print(f"     → Статус: {status} | Бройки: {qty} | Цена: {price if price else '—'}")
 
-            # записваме реда дори без цена, за да имаш статус/qty
             results.append([sku, status, qty, price or ""])
-
-            time.sleep(0.4)
+            time.sleep(0.3)
 
     finally:
         driver.quit()
