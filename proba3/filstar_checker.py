@@ -2,17 +2,20 @@
 # -*- coding: utf-8 -*-
 
 """
-Filstar checker — серийно, без пропускане/резюме.
-ВАЖНО: На ВСЯКО пускане обработва АБСОЛЮТНО всички SKU от CSV.
-- За всеки SKU: /search?term=<sku> -> кандидати -> продукт -> ред "КОД" -> цена/бройка
-- Щадящо: пауза между заявки и между SKU (регулира се долу).
-- Нормална цена (лв.): взима <strike> ако има намаление, иначе първата '... лв.'.
-- Наличност: от колоната с брояча `.counter-box input[type='text']` (видима и без логин).
-- Няма никакво "resume" и "skip" — всеки път генерира нови results/not_found.
-requirements.txt:
-    requests
-    beautifulsoup4
-    lxml
+Filstar checker — серийно и щадящо, с по-широка логика за търсене на продуктови линкове.
+На всяко пускане обработва всички SKU от CSV и презаписва results/not_found.
+
+- За всеки SKU:
+    1) GET /search?term=<sku> (bg/en също)
+    2) Вади кандидат-линкове с няколко селектора + regex fallback
+    3) За всеки кандидат: парсва таблицата #fast-order-table, намира ред по "КОД"
+    4) Взима нормална цена (лв.) и бройка (от counter-box input[type=text])
+
+- Debug:
+    - Записва search HTML, ако няма кандидати
+    - Записва product HTML, ако не намери ред/цена
+
+ВНИМАНИЕ: без асинхронност/нишки. Има паузи между заявките.
 """
 
 import csv
@@ -42,12 +45,12 @@ SEARCH_URLS = [
     "https://filstar.com/en/search?term={q}",
 ]
 
-# Щадящи настройки (увеличи, ако искаш още по-бавно)
-REQUEST_DELAY = 0.4       # сек. пауза между HTTP заявки
-DELAY_BETWEEN_SKUS = 0.8  # сек. пауза между SKU
-TIMEOUT = 20              # сек. таймаут на заявка
-RETRIES = 3               # ретраии на заявка
-MAX_CANDIDATES = 15       # до колко продуктови линка да проверим от търсачката (на SKU)
+# Щадящи настройки
+REQUEST_DELAY = 0.45      # сек. пауза между HTTP заявки
+DELAY_BETWEEN_SKUS = 0.9  # сек. пауза между SKU
+TIMEOUT = 20              # таймаут
+RETRIES = 3               # ретраии
+MAX_CANDIDATES = 20       # максимум кандидат линкове
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
@@ -81,7 +84,6 @@ class Http:
         self._last_ts = 0.0
 
     def get(self, url: str) -> requests.Response:
-        # щадяща пауза между заявки
         elapsed = time.time() - self._last_ts
         if elapsed < REQUEST_DELAY:
             time.sleep(REQUEST_DELAY - elapsed)
@@ -112,7 +114,7 @@ def read_skus(path: str) -> List[str]:
     return skus
 
 def init_result_files():
-    # ВИНАГИ презаписвай заглавките (зануляване на предишни резултати)
+    # ВИНАГИ презаписваме заглавките (нов run = нови резултати)
     with open(RES_CSV, "w", newline="", encoding="utf-8") as f:
         csv.writer(f).writerow(["SKU", "Наличност", "Бройки", "Цена (нормална лв.)"])
     with open(NF_CSV, "w", newline="", encoding="utf-8") as f:
@@ -126,18 +128,38 @@ def append_nf(sku: str):
     with open(NF_CSV, "a", newline="", encoding="utf-8") as f:
         csv.writer(f).writerow([sku])
 
-# ---------------- Парсене ----------------
+# ---------------- Търсене: кандидати ----------------
 def parse_search_candidates(html: str) -> List[str]:
+    """Извлича продуктови линкове от search HTML с няколко селектора + regex fallback."""
     soup = BeautifulSoup(html, "lxml")
     out = []
+
+    # 1) Класическият: .product-item-wapper a.product-name
     for a in soup.select(".product-item-wapper a.product-name"):
         href = (a.get("href") or "").strip()
-        if not href:
-            continue
-        if href.startswith("/"):
-            href = urljoin("https://filstar.com", href)
-        out.append(href)
-    # премахни дубли и режи до MAX_CANDIDATES
+        if href:
+            if href.startswith("/"):
+                href = urljoin("https://filstar.com", href)
+            out.append(href)
+
+    # 2) Понякога заглавията са в .product-title a
+    for a in soup.select(".product-title a"):
+        href = (a.get("href") or "").strip()
+        if href:
+            if href.startswith("/"):
+                href = urljoin("https://filstar.com", href)
+            out.append(href)
+
+    # 3) Fallback: regex за <a href="/Some-Product-1234">
+    if not out:
+        for m in re.finditer(r'href="(/[^"]*?-?\d+)"', html):
+            href = m.group(1)
+            if "/search" in href or "term=" in href:
+                continue
+            href_full = urljoin("https://filstar.com", href)
+            out.append(href_full)
+
+    # премахване на дубли и ограничение
     seen, uniq = set(), []
     for h in out:
         if h not in seen:
@@ -145,6 +167,7 @@ def parse_search_candidates(html: str) -> List[str]:
             uniq.append(h)
     return uniq[:MAX_CANDIDATES]
 
+# ---------------- Продуктова страница: ред по КОД ----------------
 def extract_row_data_from_product_html(html: str, sku: str) -> Tuple[Optional[str], Optional[int], Optional[str]]:
     """
     Връща (status, qty, normal_price_lv) за точния ред по 'КОД'.
@@ -157,51 +180,77 @@ def extract_row_data_from_product_html(html: str, sku: str) -> Tuple[Optional[st
         return None, None, None
 
     rows = tbody.select("tr")
+    target_row = None
+
+    # A) Опитай с td.td-sky (където е "КОД")
     for row in rows:
         code_td = row.select_one("td.td-sky")
         code_digits = only_digits(code_td.get_text(" ", strip=True)) if code_td else ""
-        if code_digits != str(sku):
-            continue
+        if code_digits == str(sku):
+            target_row = row
+            break
 
-        # Цена (нормална)
-        price = None
-        strike = row.find("strike")
-        if strike:
-            m = re.search(r"(\d+[.,]?\d*)\s*лв", strike.get_text(" ", strip=True), re.I)
-            if m:
-                price = m.group(1).replace(",", ".")
-        if not price:
-            price_td = None
-            for td in row.find_all("td"):
-                if td.find(string=lambda t: isinstance(t, str) and "ЦЕНА НА ДРЕБНО" in t):
-                    price_td = td
+    # B) Ако не сработи, обхождаме всички td и търсим чисто съвпадение
+    if target_row is None:
+        for row in rows:
+            tds = row.find_all("td")
+            for td in tds:
+                if only_digits(td.get_text(" ", strip=True)) == str(sku):
+                    target_row = row
                     break
-            txt = price_td.get_text(" ", strip=True) if price_td else row.get_text(" ", strip=True)
-            m2 = re.search(r"(\d+[.,]?\d*)\s*лв", txt, re.I)
-            if m2:
-                price = m2.group(1).replace(",", ".")
+            if target_row is not None:
+                break
 
-        # Наличност (counter-box)
-        qty = 0
-        status = "Unknown"
-        inp = row.select_one(".counter-box input[type='text']")
-        if inp:
-            val = (inp.get("value") or "").strip()
-            if val.isdigit():
-                qty = int(val)
-                status = "Наличен" if qty > 0 else "Изчерпан"
+    if target_row is None:
+        # C) Последен шанс: търсене по текст в реда
+        for row in rows:
+            txt = row.get_text(" ", strip=True)
+            if re.search(rf"\b{re.escape(str(sku))}\b", txt):
+                target_row = row
+                break
 
-        return status, qty, price
+    if target_row is None:
+        return None, None, None
 
-    return None, None, None
+    # --- Цена (нормална) ---
+    price = None
+    strike = target_row.find("strike")
+    if strike:
+        m = re.search(r"(\d+[.,]?\d*)\s*лв", strike.get_text(" ", strip=True), re.I)
+        if m:
+            price = m.group(1).replace(",", ".")
+    if not price:
+        price_td = None
+        for td in target_row.find_all("td"):
+            if td.find(string=lambda t: isinstance(t, str) and "ЦЕНА НА ДРЕБНО" in t):
+                price_td = td
+                break
+        txt = price_td.get_text(" ", strip=True) if price_td else target_row.get_text(" ", strip=True)
+        m2 = re.search(r"(\d+[.,]?\d*)\s*лв", txt, re.I)
+        if m2:
+            price = m2.group(1).replace(",", ".")
+
+    # --- Наличност/бройка (counter-box input[type=text]) ---
+    qty = 0
+    status = "Unknown"
+    inp = target_row.select_one(".counter-box input[type='text']")
+    if inp:
+        val = (inp.get("value") or "").strip()
+        if val.isdigit():
+            qty = int(val)
+            status = "Наличен" if qty > 0 else "Изчерпан"
+
+    return status, qty, price
 
 # ---------------- Логика за 1 SKU (серийно) ----------------
 def process_one_sku(sku: str):
     q = only_digits(sku) or sku
     print(f"\n➡️ Обработвам SKU: {q}")
 
-    # 1) търсене
     candidates = []
+    search_html_saved = False
+
+    # 1) търсене
     for su in SEARCH_URLS:
         url = su.format(q=q)
         try:
@@ -210,6 +259,11 @@ def process_one_sku(sku: str):
                 c = parse_search_candidates(r.text)
                 if c:
                     candidates.extend(c)
+                else:
+                    # запази search HTML само веднъж за дебъг
+                    if not search_html_saved:
+                        save_debug_html_text(r.text, q, "search_no_candidates")
+                        search_html_saved = True
         except Exception:
             pass
         if len(candidates) >= MAX_CANDIDATES:
@@ -229,7 +283,7 @@ def process_one_sku(sku: str):
         return
 
     # 2) обхождаме кандидат продуктите последователно
-    saved_debug = False
+    saved_product_debug = False
     for link in candidates:
         try:
             r = HTTP.get(link)
@@ -241,9 +295,9 @@ def process_one_sku(sku: str):
                 append_result([q, status or "Unknown", qty or 0, price])
                 return
             else:
-                if not saved_debug:
+                if not saved_product_debug:
                     save_debug_html_text(r.text, q, "no_price_or_row")
-                    saved_debug = True
+                    saved_product_debug = True
         except Exception:
             continue
 
@@ -256,7 +310,7 @@ def main():
         print(f"❌ Липсва {SKU_CSV}")
         sys.exit(1)
 
-    # ВИНАГИ занулявай резултатите на всяко пускане:
+    # ВИНАГИ зануляваме резултатите на всяко пускане
     init_result_files()
 
     all_skus = read_skus(SKU_CSV)
@@ -266,8 +320,7 @@ def main():
     for sku in all_skus:
         process_one_sku(sku)
         count += 1
-        # щадяща пауза между SKU
-        time.sleep(DELAY_BETWEEN_SKUS)
+        time.sleep(DELAY_BETWEEN_SKUS)  # щадяща пауза между SKU
         if count % 100 == 0:
             print(f"📦 Прогрес: {count}/{len(all_skus)} готови")
 
