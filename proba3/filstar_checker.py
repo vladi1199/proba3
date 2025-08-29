@@ -25,7 +25,7 @@ def create_driver():
 
 # Намираме URL на продукта по SKU
 def find_product_url(driver, sku):
-    search_url = f"https://filstar.com/search?term={sku}"
+    search_url = f"https://filstar.com/search?term={q}"
     driver.get(search_url)
     try:
         WebDriverWait(driver, 10).until(
