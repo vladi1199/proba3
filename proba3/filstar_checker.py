@@ -125,10 +125,10 @@ def extract_qty_status_from_row(row_el):
     except Exception:
         pass
 
-    # атрибути по input
+    # атрибути по input/елементи
     try:
-        inputs = row_el.find_elements(By.CSS_SELECTOR, "input, button, div, span")
-        for el in inputs[:400]:
+        elements = row_el.find_elements(By.CSS_SELECTOR, "input, button, div, span")
+        for el in elements[:400]:
             for attr in ["data-max-qty-1", "data-max-qty", "data-available-qty", "data-stock", "max", "data-qty"]:
                 v = el.get_attribute(attr)
                 if v and v.isdigit():
@@ -147,7 +147,6 @@ def extract_qty_status_from_row(row_el):
 def maybe_expand_variants(driver):
     """Кликва бутони/линкове, които показват таблица с разновидности (ако има такива)."""
     texts = ["разновид", "вариант", "виж всички", "покажи", "повече"]
-    # пробваме няколко видими бутона/линка
     for sel in ["button", "a", "[role='button']"]:
         try:
             els = driver.find_elements(By.CSS_SELECTOR, sel)
@@ -166,7 +165,6 @@ def maybe_expand_variants(driver):
 def find_variant_row_by_sku(driver, sku):
     """Намира <tr>, чийто текст съдържа SKU (с normalize-space)."""
     q = norm(sku)
-    # директно: ред, който съдържа SKU в клетка
     xps = [
         f"//tr[.//td[contains(normalize-space(),'{q}')]]",
         f"//tr[contains(normalize-space(),'{q}')]",
@@ -176,7 +174,6 @@ def find_variant_row_by_sku(driver, sku):
             return driver.find_element(By.XPATH, xp)
         except Exception:
             continue
-    # опитай да намериш елемент с SKU и да се качиш до ред
     try:
         cell = driver.find_element(By.XPATH, f"//*[contains(normalize-space(),'{q}')]")
         try:
@@ -209,32 +206,43 @@ def scrape_product_page(driver, product_url, sku):
         pass
     time.sleep(0.4)
 
-    # опитай да разгърнеш таблица с разновидности (ако е скрита)
+    print(f"   🔎 TITLE: {driver.title.strip()[:120]}")
+    print(f"   🔎 URL:   {driver.current_url}")
+
     maybe_expand_variants(driver)
     time.sleep(0.4)
 
-    # намери конкретния ред по SKU
     row = find_variant_row_by_sku(driver, sku)
     if not row:
-        # ако не намира ред – запази HTML за диагностика и върни празно
         save_debug_html(driver, sku)
         return "Unknown", 0, None
 
-    # цена (нормална от strike)
     price = extract_normal_price_from_row(row)
-
-    # наличност/qty
     status, qty = extract_qty_status_from_row(row)
-
     return status, qty, price
 
 
 # ---------------- CSV I/O ----------------
 def read_sku_codes(path):
+    skus = []
     with open(path, newline="", encoding="utf-8") as f:
         r = csv.reader(f)
-        next(r, None)
-        return [row[0].strip() for row in f if row and row[0].strip()]
+        header = next(r, None)  # пропускаме хедъра
+        for row in r:
+            if not row:
+                continue
+            val = (row[0] or "").strip()
+            if not val:
+                continue
+            if val.lower() == "sku":
+                continue
+            skus.append(val)
+    # Debug: покажи първите няколко прочетени SKU
+    if skus:
+        print(f"   🧾 SKUs loaded ({len(skus)}): {', '.join(skus[:5])}{' ...' if len(skus)>5 else ''}")
+    else:
+        print("   🧾 No SKUs loaded from CSV.")
+    return skus
 
 
 def save_results(rows, path):
@@ -270,17 +278,12 @@ def main():
                 not_found.append(sku)
                 continue
 
-            print(f"  ✅ Продукт: {product_url}")
+            print(f"  ✅ Продукт линк: {product_url}")
             status, qty, price = scrape_product_page(driver, product_url, sku)
             print(f"     → Статус: {status} | Бройки: {qty} | Цена: {price if price else '—'}")
 
-            if price:
-                results.append([sku, status, qty, price])
-            else:
-                # ако не успеем да вземем цена – пак записваме реда за да видим статуса и qty
-                results.append([sku, status, qty, ""])
-                # и пазим HTML за дебъг
-                save_debug_html(driver, sku)
+            # записваме реда дори без цена, за да имаш статус/qty
+            results.append([sku, status, qty, price or ""])
 
             time.sleep(0.4)
 
