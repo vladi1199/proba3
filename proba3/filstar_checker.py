@@ -22,6 +22,7 @@ HTTP_HEADERS = {
     "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/127 Safari/537.36",
     "Accept-Language": "bg-BG,bg;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Cache-Control": "no-cache",
 }
 
 
@@ -31,13 +32,12 @@ def create_driver():
     opts.add_argument("--headless=new")
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
-    opts.add_argument("--window-size=1440,1400")
+    opts.add_argument("--window-size=1440,1800")
     opts.add_argument("--lang=bg-BG,bg,en-US,en")
     opts.add_experimental_option("excludeSwitches", ["enable-automation"])
     opts.add_experimental_option("useAutomationExtension", False)
-
     driver = webdriver.Chrome(options=opts)
-    driver.set_page_load_timeout(40)
+    driver.set_page_load_timeout(45)
     return driver
 
 
@@ -70,15 +70,17 @@ def save_debug_html_text(text, sku, tag):
         pass
 
 
-def save_debug_html(driver, sku, tag):
-    try:
-        save_debug_html_text(driver.page_source, sku, tag)
-    except Exception:
-        pass
+# ---------------- SKU → линкове кандидати ----------------
+def direct_sku_links(sku):
+    q = norm(sku)
+    return [
+        f"https://filstar.com/product?sku={q}",
+        f"https://filstar.com/bg/product?sku={q}",
+        f"https://filstar.com/en/product?sku={q}",
+    ]
 
 
-# ---------------- Търсене: връща списък с кандидати ----------------
-def get_search_candidates(driver, sku, limit=12):
+def get_search_candidates(driver, sku, limit=20):
     """Взима до 'limit' продуктови линка от /search?term=<SKU> (bg, en)."""
     q = norm(sku)
     search_urls = [
@@ -86,8 +88,7 @@ def get_search_candidates(driver, sku, limit=12):
         f"https://filstar.com/bg/search?term={q}",
         f"https://filstar.com/en/search?term={q}",
     ]
-    seen = set()
-    out = []
+    seen, out = set(), []
     for surl in search_urls:
         try:
             driver.get(surl)
@@ -143,7 +144,7 @@ def scroll_until_row_with_sku(driver, sku, max_steps=24, step_px=900, pause=0.35
         return False
 
 
-# ---------------- Извличане от таблицата ----------------
+# ---------------- Търсене на ред в таблицата ----------------
 def find_row_by_sku_in_table(driver, sku):
     q = norm(sku)
     try:
@@ -154,23 +155,21 @@ def find_row_by_sku_in_table(driver, sku):
         return None, None
 
     rows = tbody.find_elements(By.CSS_SELECTOR, "tr")
-    print(f"   🔎 DEBUG: намерени редове в таблицата: {len(rows)}")
+    # print(f"   🔎 DEBUG: намерени редове в таблицата: {len(rows)}")
 
     for idx, row in enumerate(rows, start=1):
         try:
             code_td = row.find_element(By.CSS_SELECTOR, "td.td-sky")
             code_text = (code_td.text or "").replace("\xa0", " ").strip()
             code_digits = re.sub(r"\D+", "", code_text)
-            print(f"      • ред {idx}: code_cell='{code_text}' (digits='{code_digits}')")
             if code_digits == q:
-                print(f"      ✅ съвпадение по SKU в ред {idx}")
                 return row, code_text
         except Exception:
             continue
-
     return None, None
 
 
+# ---------------- Цена/статус от ред ----------------
 def extract_price_from_row_via_selenium(row_el):
     # 1) нормалната (стара) цена в <strike>
     try:
@@ -181,8 +180,7 @@ def extract_price_from_row_via_selenium(row_el):
                 return m.group(1).replace(",", ".")
     except Exception:
         pass
-
-    # 2) ценова клетка „ЦЕНА НА ДРЕБНО“ (вътрешен текст или innerHTML)
+    # 2) „ЦЕНА НА ДРЕБНО“
     try:
         price_td = row_el.find_element(By.XPATH, ".//td[.//span[contains(.,'ЦЕНА НА ДРЕБНО')]]")
         txt = (price_td.text or "").replace("\xa0", " ")
@@ -195,8 +193,7 @@ def extract_price_from_row_via_selenium(row_el):
             return m2.group(1).replace(",", ".")
     except Exception:
         pass
-
-    # 3) fallback: първата „… лв.“ в целия ред
+    # 3) fallback – първата „… лв.“ в целия ред
     try:
         txt = (row_el.text or "").replace("\xa0", " ")
         m = re.search(r"(\d+[.,]?\d*)\s*лв", txt, flags=re.IGNORECASE)
@@ -208,8 +205,28 @@ def extract_price_from_row_via_selenium(row_el):
             return m2.group(1).replace(",", ".")
     except Exception:
         pass
-
     return None
+
+
+def extract_status_from_row_via_selenium(row_el):
+    """Наличност без логнат потребител: ако има кошница → Наличен; ако има текст „Изчерпан“ → Изчерпан; иначе Unknown."""
+    try:
+        # кошница в клетка .cart-data
+        cart = row_el.find_elements(By.CSS_SELECTOR, "td.cart-data img[alt='Add to cart']")
+        if cart:
+            return "Наличен", None
+    except Exception:
+        pass
+    try:
+        # tooltip с „Изчерпан продукт!“
+        if "Изчерпан" in (row_el.text or ""):
+            return "Изчерпан", 0
+        html = row_el.get_attribute("innerHTML") or ""
+        if re.search(r"Изчерпан", html, flags=re.I):
+            return "Изчерпан", 0
+    except Exception:
+        pass
+    return "Unknown", None
 
 
 # ---------------- Fallback: requests (суров HTML) ----------------
@@ -257,7 +274,7 @@ def extract_price_via_requests(product_url, sku):
         return None
 
 
-# ---------------- Комбинирано извличане от продуктова страница ----------------
+# ---------------- Отваряне и извличане от продуктова страница ----------------
 def scrape_product_page(driver, product_url, sku):
     driver.get(product_url)
     click_cookies_if_any(driver)
@@ -271,19 +288,50 @@ def scrape_product_page(driver, product_url, sku):
     # скрол (lazy-load)
     scroll_until_row_with_sku(driver, sku)
 
+    # намери ред
     row, _ = find_row_by_sku_in_table(driver, sku)
     price = None
+    status, qty = "Unknown", None
+
     if row:
         price = extract_price_from_row_via_selenium(row)
+        status, qty = extract_status_from_row_via_selenium(row)
 
-    # fallback
+    # fallback за цена
     if price is None:
         price = extract_price_via_requests(product_url, sku)
-        if price is None:
-            save_debug_html(driver, sku, tag="no_price_or_row")
 
-    status, qty = "Unknown", 0
+    # нормализирай qty
+    qty = qty if isinstance(qty, int) else 0
     return status, qty, price
+
+
+# ---------------- Високо ниво: за този SKU намери „неговата“ страница ----------------
+def resolve_product_for_sku(driver, sku):
+    """
+    1) Пробва директни /product?sku=<SKU> линкове (bg/en).
+    2) Ако не стане, търси и обхожда всички кандидати, докато намери ред с този SKU.
+    Връща (status, qty, price, product_url) или (None, None, None, None).
+    """
+    # 1) директни линкове
+    for link in direct_sku_links(sku):
+        try:
+            resp = requests.get(link, headers=HTTP_HEADERS, timeout=15)
+            if resp.status_code == 200 and "fast-order-table" in resp.text:
+                status, qty, price = scrape_product_page(driver, link, sku)
+                if price is not None or status != "Unknown":
+                    return status, qty, price, link
+        except Exception:
+            continue
+
+    # 2) търсене и обхождане
+    candidates = get_search_candidates(driver, sku, limit=20)
+    for link in candidates:
+        status, qty, price = scrape_product_page(driver, link, sku)
+        if price is not None or status != "Unknown":
+            return status, qty, price, link
+
+    return None, None, None, None
 
 
 # ---------------- CSV I/O ----------------
@@ -310,7 +358,7 @@ def save_results(rows, path):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(["SKU", "Наличност", "Бройки", "Цена (нормална лв.)"])
+        w.writerow(["SKU", "Наличност", "Бройки", "Цена (нормална лв.)", "ProductURL"])
         w.writerows(rows)
 
 
@@ -332,31 +380,18 @@ def main():
     try:
         for sku in skus:
             print(f"\n➡️ Обработвам SKU: {sku}")
+            status, qty, price, link = resolve_product_for_sku(driver, sku)
 
-            # 1) вземи списък от кандидати от search
-            candidates = get_search_candidates(driver, sku, limit=12)
-            if not candidates:
-                print(f"❌ Няма резултати в търсачката за {sku}")
-                not_found.append(sku)
-                continue
-
-            found = False
-            for link in candidates:
-                print(f"  🔎 Пробвам продукт: {link}")
-                status, qty, price = scrape_product_page(driver, link, sku)
-                if price is not None:
-                    print(f"  ✅ Открих SKU {sku} на {link} → цена {price} лв.")
-                    results.append([sku, status, qty, price])
-                    found = True
-                    break
-                else:
-                    print(f"  ⚠️ На {link} SKU {sku} не се намери – опитваме следващ.")
-
-            if not found:
-                print(f"❌ Не намерих SKU {sku} в нито един от {len(candidates)} резултата.")
+            if link:
+                print(f"  ✅ Страница: {link}")
+            if price is not None or status not in (None, "Unknown"):
+                print(f"     → Статус: {status} | Бройки: {qty} | Цена: {price if price else '—'}")
+                results.append([sku, status or "Unknown", qty or 0, price or "", link or ""])
+            else:
+                print(f"❌ Не намерих SKU {sku} в подходяща продуктова страница.")
                 not_found.append(sku)
 
-            time.sleep(0.2)
+            time.sleep(0.25)  # учтиво забавяне, за да не ни баннат
 
     finally:
         driver.quit()
