@@ -1,8 +1,8 @@
 name: Update XML Daily
 
 on:
-  # schedule:
-  #   - cron: '0 0 * * *'  # Всеки ден в 00:00 UTC (03:00 BG време)
+   schedule:
+     - cron: '0 0 * * *'  # Всеки ден в 00:00 UTC (03:00 BG време)
   workflow_dispatch:
 
 jobs:
