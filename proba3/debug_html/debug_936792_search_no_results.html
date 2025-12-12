@@ -32,10 +32,10 @@
                     <link rel="alternate" hreflang="bg" href="https://filstar.com/search?term=936792">
             
 
-            <link rel="stylesheet" href="/build/0.10ce7f60.css"><link rel="stylesheet" href="/build/2.76dd3e7b.css"><link rel="stylesheet" href="/build/app.3a29ea22.css">
+            <link rel="stylesheet" href="/build/0.10ce7f60.css"><link rel="stylesheet" href="/build/2.76dd3e7b.css"><link rel="stylesheet" href="/build/app.13bf91b6.css">
     
                     <!-- Global site tag (gtag.js) - Google Analytics -->
-            <script type="text/javascript" async="" src="https://www.google-analytics.com/analytics.js"></script><script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-ECXJW15GJF&amp;cx=c&amp;gtm=4e5ca0h2"></script><script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-36261628-1"></script>
+            <script type="text/javascript" async="" src="https://www.google-analytics.com/analytics.js"></script><script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-ECXJW15GJF&amp;cx=c&amp;gtm=4e5ca1"></script><script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-36261628-1"></script>
             <script>
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
@@ -122,7 +122,9 @@
                     Все още не сте добавили продукти.
                 </div> </div> <!----></div></div> <button type="button" data-toggle="collapse" aria-controls="openMobileNavbar" data-target="#openMobileNavbar" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler open-mobile-menu"><span class="navbar-toggler-icon"><img src="/build/images/icons/mobile_menu.svg" alt="" class="menu-icon"></span></button></div> <script type="text/x-template" id="search-autocomplete">
     <form action="/search" method="get" class="form-inline only-for-desktop">
-        <input @click="inputOnClick($event)" @focus="onFocus" autocomplete="off" required="required" @keyup="onKeyUp" v-model="term" type="text" name="term" placeholder="Какво търсите днес?"/>
+        <input @click="inputOnClick($event)" @focus="onFocus" autocomplete="off" required="required" @keyup="onKeyUp"
+               @keydown.enter="onEnter" v-model="term" type="text" name="term"
+               placeholder="Какво търсите днес?"/>
         <button class="search-button"><img src="/build/images/icons/search-icon.svg" alt=""/></button>
         <div class="search-suggestions" @click="containerOnClick($event)" v-if="!!term && isDropdownVisible">
             <div class="search-suggestions-item" v-for="product in results">
@@ -131,7 +133,8 @@
                     [[ product.name ]] [[ product.year ]]
                 </a>
             </div>
-            <a :href="fullSearchUrl" v-if="results.length && results.length === 6 && moreResultCount > 0" class="more-results">
+            <a :href="fullSearchUrl" v-if="results.length && results.length === 6 && moreResultCount > 0"
+               class="more-results">
                 Виж още [[moreResultCount]] резултата
             </a>
             <div v-else-if="!results.length" class="no-results">
@@ -393,7 +396,7 @@
                                                                 GDPR и бисквитки
                                                             </a></li> <li><a href="https://filstar.com/Vaprosi" target="_self">
                                                                 ЧЗВ
-                                                            </a></li></ul></div></div> <div class="col-xl-7 right-side"><div class="info-bulletin"><div class="info-bulletin-header"><h3>Бюлетин</h3> <p>Получавайте първи промоции и интересни новини</p></div> <div id="subscription-form-global" data-controller="subscription" data-subscription-url="/subscription-form" class="info-bulletin-body"><form name="newsletter_global" method="post" data-action="submit-&gt;subscription#submitForm" class="form-inline" novalidate=""><input type="email" id="newsletter_global_email" name="newsletter_global[email]" placeholder="Имейл" data-error-message="Моля, въведете Вашия имейл адрес." class="form-control mr-sm-2 required form-control"> <button id="newsletter_submit_btn" type="submit" class="main-button normal premier">ЗАПИШЕТЕ СЕ</button> <div id="form-message-success" style="margin: 0px;"><div class="alert alert-success">Вие се записахте успешно за нашия бюлетин.</div></div> <div id="form-message-error" style="margin: 0px;"><div class="alert alert-danger">Възникна грешка, моля опитайте по-късно.</div></div> <div id="form-request-error" class="form-error" style="display: none;"><div class="alert alert-danger"></div></div> <div class="form-check"><input type="checkbox" data-error-message="Моля, приемете условията за ползване." name="terms" value="1" id="defaultCheck1" class="form-check-input required"> <label for="defaultCheck1" class="form-check-label"><span>Съгласен съм с </span> <a href="/terms" target="_blank" class="mx-1"> Общите условия за ползване </a> <span> на К и К ООД</span></label></div> <input type="hidden" id="newsletter_global_captcha" name="newsletter_global[captcha]" data-controller="captcha" data-api-key="6LfAu70rAAAAABxvGPPaMykuTrnpAau7vZHXotqp"><input type="hidden" id="newsletter_global__token" name="newsletter_global[_token]" value="a4GmxDGuBEaqUHMxVEgTiO8am63g_G-V3JvrV0iP4eI"></form></div> <div class="info-bulletin-footer"><div class="row"><div class="col-xl-3 social-networks"><h4>Последвайте ни</h4> <ul><li><a href="https://www.facebook.com/FilstarFishing/" target="_blank"><img src="/build/images/icons/facebook-logo-button.svg" alt="Facebook icon"></a></li> <li><a href="https://www.instagram.com/filstarfishing/" target="_blank"><img src="/build/images/icons/instagram-logo.svg" alt="Facebook icon"></a></li> <li><a href="https://www.youtube.com/user/FilStarLtd" target="_blank"><img src="/build/images/icons/youtube-logotype.svg" alt="Facebook icon"></a></li></ul></div> <div class="col-xl-9 other-websites"><h4>ОЩЕ ОТ FILSTAR</h4> <ul><li><a href="https://www.fishing-floats.com/" target="_blank" class="main-button white">Fishing Floats</a></li> <li><a href="https://filstar.com/trolling-9/sonari-humminbird-29" target="_blank" class="main-button white">Humminbird.bg</a></li> <li><a href="https://fishingtour.filstar.com/" target="_blank" class="main-button white">Fishingtour.filstar.com</a></li></ul></div></div></div></div></div></div></div></footer> <a href="#" class="back-to-top"><img src="/build/images/icons/arrow-up.svg" alt="arrow logo"></a></div>
+                                                            </a></li></ul></div></div> <div class="col-xl-7 right-side"><div class="info-bulletin"><div class="info-bulletin-header"><h3>Бюлетин</h3> <p>Получавайте първи промоции и интересни новини</p></div> <div id="subscription-form-global" data-controller="subscription" data-subscription-url="/subscription-form" class="info-bulletin-body"><form name="newsletter_global" method="post" data-action="submit-&gt;subscription#submitForm" class="form-inline" novalidate=""><input type="email" id="newsletter_global_email" name="newsletter_global[email]" placeholder="Имейл" data-error-message="Моля, въведете Вашия имейл адрес." class="form-control mr-sm-2 required form-control"> <button id="newsletter_submit_btn" type="submit" class="main-button normal premier">ЗАПИШЕТЕ СЕ</button> <div id="form-message-success" style="margin: 0px;"><div class="alert alert-success">Вие се записахте успешно за нашия бюлетин.</div></div> <div id="form-message-error" style="margin: 0px;"><div class="alert alert-danger">Възникна грешка, моля опитайте по-късно.</div></div> <div id="form-request-error" class="form-error" style="display: none;"><div class="alert alert-danger"></div></div> <div class="form-check"><input type="checkbox" data-error-message="Моля, приемете условията за ползване." name="terms" value="1" id="defaultCheck1" class="form-check-input required"> <label for="defaultCheck1" class="form-check-label"><span>Съгласен съм с </span> <a href="/terms" target="_blank" class="mx-1"> Общите условия за ползване </a> <span> на К и К ООД</span></label></div> <input type="hidden" id="newsletter_global_captcha" name="newsletter_global[captcha]" data-controller="captcha" data-api-key="6LfAu70rAAAAABxvGPPaMykuTrnpAau7vZHXotqp"><input type="hidden" id="newsletter_global__token" name="newsletter_global[_token]" value="_snn4ATwwRqgJ5ZtA3nBdNjCmKSr4iFVpspGGNMZCFo"></form></div> <div class="info-bulletin-footer"><div class="row"><div class="col-xl-3 social-networks"><h4>Последвайте ни</h4> <ul><li><a href="https://www.facebook.com/FilstarFishing/" target="_blank"><img src="/build/images/icons/facebook-logo-button.svg" alt="Facebook icon"></a></li> <li><a href="https://www.instagram.com/filstarfishing/" target="_blank"><img src="/build/images/icons/instagram-logo.svg" alt="Facebook icon"></a></li> <li><a href="https://www.youtube.com/user/FilStarLtd" target="_blank"><img src="/build/images/icons/youtube-logotype.svg" alt="Facebook icon"></a></li></ul></div> <div class="col-xl-9 other-websites"><h4>ОЩЕ ОТ FILSTAR</h4> <ul><li><a href="https://www.fishing-floats.com/" target="_blank" class="main-button white">Fishing Floats</a></li> <li><a href="https://filstar.com/trolling-9/sonari-humminbird-29" target="_blank" class="main-button white">Humminbird.bg</a></li> <li><a href="https://fishingtour.filstar.com/" target="_blank" class="main-button white">Fishingtour.filstar.com</a></li></ul></div></div></div></div></div></div></div></footer> <a href="#" class="back-to-top"><img src="/build/images/icons/arrow-up.svg" alt="arrow logo"></a></div>
 
 <div class="cookies flex-lg-row flex-column justify-content-between show" id="cookie-banner">
     <div class="d-xl-flex text-left align-items-center cookies-a">
@@ -413,7 +416,7 @@
 </div>
 
 
-    <script src="/build/runtime.d94b3b43.js"></script><script src="/build/0.33ab806c.js"></script><script src="/build/2.894e9701.js"></script><script src="/build/app.cd54db0d.js"></script>
+    <script src="/build/runtime.d94b3b43.js"></script><script src="/build/0.33ab806c.js"></script><script src="/build/2.894e9701.js"></script><script src="/build/app.f46912ef.js"></script>
 
             
     
