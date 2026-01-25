@@ -1,0 +1,428 @@
+<html lang="en"><head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="facebook-domain-verification" content="9g644ld7di6keelkn2xtz05q9n9lln">
+    <link rel="preload" href="/build/fonts/fontawesome-webfont.woff2" as="font" type="font/woff2" crossorigin="">
+
+    <link rel="preconnect" href="https://a.omappapi.com">
+    <link rel="preconnect" href="https://connect.facebook.net">
+    <link rel="preconnect" href="https://www.facebook.com">
+    <link rel="manifest" href="/manifest.json">
+
+
+                    <title>FilStar - Онлайн магазин за риболовни принадлежности </title>
+<meta name="description" content="Най-добрите оферти за риболовно оборудване и аксесоари в filstar.com. Купете сега висококачествено рибарско оборудване, въдици, макари, примамки и други.">
+<meta name="author" content="meta.author">
+
+<meta property="fb:page_id" content="">
+
+<meta property="og:title" content="Риболовно оборудване и аксесоари - filstar.com ">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://filstar.com/search?term=945984">
+<meta property="og:description" content="Най-добрите оферти за риболовно оборудване и аксесоари в filstar.com. Купете сега висококачествено рибарско оборудване, въдици, макари, примамки и други.">
+<meta property="og:site_name" content="filstar.com">
+<meta property="og:image" content="home.og_image">
+
+
+    
+                        
+            
+                    <link rel="alternate" hreflang="en" href="https://filstar.com/en/search?term=945984">
+                    <link rel="alternate" hreflang="bg" href="https://filstar.com/search?term=945984">
+            
+
+            <link rel="stylesheet" href="/build/0.10ce7f60.css"><link rel="stylesheet" href="/build/2.76dd3e7b.css"><link rel="stylesheet" href="/build/app.13bf91b6.css">
+    
+                    <!-- Global site tag (gtag.js) - Google Analytics -->
+            <script type="text/javascript" async="" src="https://www.google-analytics.com/analytics.js"></script><script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-ECXJW15GJF&amp;cx=c&amp;gtm=4e61m0"></script><script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-36261628-1"></script>
+            <script>
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', 'UA-36261628-1');
+            </script>
+        </head>
+
+<body data-controller="gtm" data-object="user" data-main="1" data-data="">
+<div id="app"><header><div class="container-fluid px-0"><div data-controller="page-view" data-unique-event-id="" class="top-header"><nav class="navbar navbar-expand-xl"><a href="/" class="navbar-brand"><img src="/build/images/icons/filstar_logo_new.svg" alt="logo image" class="img-fluid logo"></a> <div class="mobile-content-icons"><div class="nav-item language d-xl-none d-inline-block align-middle"><a href="https://filstar.com/en/search?term=945984"><img width="32px" src="/build/images/icons/en_flag.svg" alt="flag icon" class="ml-0"></a></div> <a href="/login"><img width="32px" src="/build/images/icons/user.svg" alt="user icon" class="user-icn"></a> <script type="text/x-template" id="cart-widget">
+    <div class="d-xl-block d-inline-block" style="vertical-align: middle">
+        <div class="d-flex align-items-center">
+            <div class="cart-image">
+                <a class="d-xl-block d-none" href="javascript:;">
+                    <img class="d-xl-inline d-none" src="/build/images/icons/shopping-cart.svg" alt="cart icon"/>
+                    <img src="/build/images/icons/mobile_cart.svg" alt=""
+                         class="mobile_cart d-xl-none"/>
+                    <span class="products-counter" v-text="selectedStoreRowsQuantity"></span>
+                </a>
+                <a class="d-xl-none" href="/cart">
+                    <img class="d-xl-inline d-none" src="/build/images/icons/shopping-cart.svg" alt="cart icon"/>
+                    <img src="/build/images/icons/mobile_cart.svg" alt=""
+                         class="mobile_cart d-xl-none"/>
+                    <span class="products-counter" v-text="selectedStoreRowsQuantity"></span>
+                </a>
+            </div>
+            <a class="cart-text d-xl-block d-none" href="javascript:;">Моята количка</a>
+        </div>
+        <div class="modal-cart">
+                                    <div class="modal-cart-body">
+                <div class="product d-flex align-items-center" v-if="!cart.quantity && !loading">
+                    Все още не сте добавили продукти.
+                </div>
+                <div class="product d-flex align-items-center" v-if="!loading" v-for="row in selectedStoreRows">
+                    <div class="delete">
+                        <div @click="removeRow(row.id, removeCartRowUrl)" class="product-remove">
+                            <img src="/build/images/icons/DeleteIcon.svg" alt="delete icon"/>
+                        </div>
+                    </div>
+                    <div class="image">
+
+                        <a :href="row.href">
+                            <img :src="row.image" :alt="row.name"/>
+                        </a>
+                    </div>
+                    <div class="name-price">
+                        <h5>
+                            <a class="product-title" :href="row.href">[[row.name]] [[row.year]]</a>
+                        </h5>
+                        <strike v-if="row.originalPrice !== row.price" v-text="formattedPrice(row.originalPrice, '', true)"></strike>
+                       <div class="d-md-flex mt-1">
+                           <h6 v-text="formattedPrice(row.price)"></h6>
+                       </div>
+                    </div>
+                    <div class="count d-flex align-items-center">
+                        <a @click="decrementQuantity(row)">
+                            <img src="/build/images/icons/minus.png" alt="" class=""/>
+                        </a>
+                        <input type="number" readonly="readonly" v-model="row.quantity">
+                        <a @click="incrementRowQuantity(row)">
+                            <img src="/build/images/icons/plus1.png" alt="" class=""/>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-cart-footer" v-if="cart.quantity && !loading">
+                                <div class="p-2 text-center">[[ cart.freeShippingLabel ]]</div>
+                                <div class="total-price-holder">
+                    <div class="info-content d-flex align-items-center" v-if="cart.quantity">
+                        <p>Общо:</p>
+                        <div class="d-flex">
+                            <p class="big-number" v-text="total"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="go-to-cart-box">
+                    <a href="/cart" class="main-button normal premier">Виж количката</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</script> <div class="d-xl-block d-inline-block" style="vertical-align: middle;"><div class="d-flex align-items-center"><div class="cart-image"><a href="javascript:;" class="d-xl-block d-none"><img src="/build/images/icons/shopping-cart.svg" alt="cart icon" class="d-xl-inline d-none"> <img src="/build/images/icons/mobile_cart.svg" alt="" class="mobile_cart d-xl-none"> <span class="products-counter">0</span></a> <a href="/cart" class="d-xl-none"><img src="/build/images/icons/shopping-cart.svg" alt="cart icon" class="d-xl-inline d-none"> <img src="/build/images/icons/mobile_cart.svg" alt="" class="mobile_cart d-xl-none"> <span class="products-counter">0</span></a></div> <a href="javascript:;" class="cart-text d-xl-block d-none">Моята количка</a></div> <div class="modal-cart"><div class="modal-cart-body"><div class="product d-flex align-items-center">
+                    Все още не сте добавили продукти.
+                </div> </div> <!----></div></div> <button type="button" data-toggle="collapse" aria-controls="openMobileNavbar" data-target="#openMobileNavbar" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler open-mobile-menu"><span class="navbar-toggler-icon"><img src="/build/images/icons/mobile_menu.svg" alt="" class="menu-icon"></span></button></div> <script type="text/x-template" id="search-autocomplete">
+    <form action="/search" method="get" class="form-inline only-for-desktop">
+        <input @click="inputOnClick($event)" @focus="onFocus" autocomplete="off" required="required" @keyup="onKeyUp"
+               @keydown.enter="onEnter" v-model="term" type="text" name="term"
+               placeholder="Какво търсите днес?"/>
+        <button class="search-button"><img src="/build/images/icons/search-icon.svg" alt=""/></button>
+        <div class="search-suggestions" @click="containerOnClick($event)" v-if="!!term && isDropdownVisible">
+            <div class="search-suggestions-item" v-for="product in results">
+                <a :href="product.url">
+                    <img :src="product.image" :alt="product.name" class="img-fluid">
+                    [[ product.name ]] [[ product.year ]]
+                </a>
+            </div>
+            <a :href="fullSearchUrl" v-if="results.length && results.length === 6 && moreResultCount > 0"
+               class="more-results">
+                Виж още [[moreResultCount]] резултата
+            </a>
+            <div v-else-if="!results.length" class="no-results">
+                <div v-if="isLoading" class="spinner-border text-center mx-auto d-table" role="status">
+                    <span class="sr-only text-center">Loading...</span>
+                </div>
+                <span v-else-if="request" class="alert alert-info d-block">
+                    Няма намерени резултати
+                </span>
+            </div>
+        </div>
+    </form>
+</script> <form action="/search" method="get" class="form-inline only-for-desktop" novalidate=""><input autocomplete="off" required="required" type="text" name="term" placeholder="Какво търсите днес?"> <button class="search-button"><img src="/build/images/icons/search-icon.svg" alt=""></button> <!----></form> <div id="" class="collapse navbar-collapse d-xl-flex d-none"><ul class="navbar-nav ml-auto"><li class="nav-item active"><a href="https://blog.filstar.com/" target="_blank" class="nav-link">Блог</a></li> <li class="nav-item"><a href="/distributors" class="nav-link">Дилъри</a></li> <li class="nav-item"><a href="/catalogs" class="nav-link">Каталози</a></li> <li class="nav-item"><a href="/za-nas" class="nav-link">За нас</a></li> <li class="nav-item"><a href="/contacts" class="nav-link">Контакти</a></li> <li class="nav-item phone-content"><a href="tel:+359884742185" class="nav-link">0884 742 185</a></li> <li class="nav-item language"><img src="/build/images/icons/en_flag.svg" alt="flag icon"> <a href="https://filstar.com/en/search?term=945984" class="nav-link">
+                                                English
+                                            </a></li> <li class="nav-item social-networks"><a href="https://www.facebook.com/FilstarFishing/" target="_blank"><img src="/build/images/icons/facebook-logo-button.svg" alt="flag icon"></a> <a href="https://www.instagram.com/filstarfishing/" target="_blank"><img src="/build/images/icons/instagram-logo.svg" alt="flag icon"></a> <a href="https://www.youtube.com/user/FilStarLtd" target="_blank"><img src="/build/images/icons/youtube-logotype.svg" alt="flag icon"></a></li></ul></div></nav></div> <div class="bottom-header mobile-menu"><div class="mobile-header d-xl-none"><p>Меню</p> <a href="#" class="close-mobile-menu"><img src="/build/images/icons/clear-button.png" alt="Remove icon"></a></div> <nav class="navbar navbar-expand"><div id="" class="collapse navbar-collapse mobile-body"><ul class="navbar-nav ml-auto"><li class="nav-item"><a href="/products/new" class="nav-link">
+                                        Нови
+                                    </a></li> <li class="nav-item"><a href="/products/backinstock" class="nav-link">
+                                        Отново на склад
+                                    </a></li> <li class="nav-item"><a href="/products/promo" class="nav-link">
+                                        Промо
+                                    </a></li> <li class="nav-item dropdown"><a href="/prachki-3" class="nav-link dropdown-toggle ">Пръчки</a> <button class="nav-link d-xl-none dropdown-toggle ">Пръчки</button> <div class="dropdown-btn d-xl-none d-block"><i aria-hidden="true" class="fa fa-angle-down"></i></div> <ul class="dropdown-menu"><li class="sub-menu-item "><a href="/rods-3/spining-65" class="sub-menu-link">Спининг
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/rods-3/teleskopi-s-vodachi-63" class="sub-menu-link">Телескопи с водачи
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/rods-3/teleskopi-bez-vodachi-54" class="sub-menu-link">Телескопи без водачи
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/rods-3/sharanski-prachki-66" class="sub-menu-link">Шарански пръчки
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/rods-3/machovi-i-fider-prachki-64" class="sub-menu-link">Мачови и фидер пръчки
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/rods-3/muharki-67" class="sub-menu-link">Мухарки
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/rods-3/komplekti-187" class="sub-menu-link">Комплекти
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/rods-3/spetzialni-prachki-189" class="sub-menu-link">Специални пръчки
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li></ul></li> <li class="nav-item dropdown"><a href="/makari-6" class="nav-link dropdown-toggle ">Макари</a> <button class="nav-link d-xl-none dropdown-toggle ">Макари</button> <div class="dropdown-btn d-xl-none d-block"><i aria-hidden="true" class="fa fa-angle-down"></i></div> <ul class="dropdown-menu"><li class="sub-menu-item "><a href="/reels-6/preden-avans-199" class="sub-menu-link">Макари с преден аванс
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/reels-6/zaden-avans-200" class="sub-menu-link">Макари със заден аванс
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/reels-6/baitranar-202" class="sub-menu-link">Байтрънър
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/reels-6/multiplikatori" class="sub-menu-link">Мултипликатори
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/reels-6/muharski-bg" class="sub-menu-link">Мухарски
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/reels-6/drugi-18" class="sub-menu-link">Други
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li></ul></li> <li class="nav-item dropdown"><a href="/vlakna-i-povodi-1" class="nav-link dropdown-toggle ">Влакна и поводи</a> <button class="nav-link d-xl-none dropdown-toggle ">Влакна и поводи</button> <div class="dropdown-btn d-xl-none d-block"><i aria-hidden="true" class="fa fa-angle-down"></i></div> <ul class="dropdown-menu"><li class="sub-menu-item "><a href="/lines-and-leaders-1/monofilno" class="sub-menu-link">Монофилни
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/lines-and-leaders-1/pleteni" class="sub-menu-link">Плетени
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/lines-and-leaders-1/fluorocarbon" class="sub-menu-link">Fluorocarbon
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/lines-and-leaders-1/drugi-272" class="sub-menu-link">Други
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li></ul></li> <li class="nav-item dropdown"><a href="/kuki-4" class="nav-link dropdown-toggle ">Куки</a> <button class="nav-link d-xl-none dropdown-toggle ">Куки</button> <div class="dropdown-btn d-xl-none d-block"><i aria-hidden="true" class="fa fa-angle-down"></i></div> <ul class="dropdown-menu"><li class="sub-menu-item "><a href="/hooks-4/edinicni" class="sub-menu-link">Единични
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/hooks-4/dvoini" class="sub-menu-link">Двойни
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/hooks-4/troini-kuki" class="sub-menu-link">Тройни
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/hooks-4/ofsetni" class="sub-menu-link">Офсетни и worm
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/hooks-4/assist-kuki" class="sub-menu-link">Assist
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/hooks-4/vyrzani" class="sub-menu-link">Вързани
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/hooks-4/drugi-222" class="sub-menu-link">Други
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li></ul></li> <li class="nav-item dropdown"><a href="/izkustveni-primamki-7" class="nav-link dropdown-toggle ">Изкуствени примамки</a> <button class="nav-link d-xl-none dropdown-toggle ">Изкуствени примамки</button> <div class="dropdown-btn d-xl-none d-block"><i aria-hidden="true" class="fa fa-angle-down"></i></div> <ul class="dropdown-menu"><li class="sub-menu-item "><a href="/lures-7/vobleri" class="sub-menu-link">Воблери
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/lures-7/blesni-vyrtqshti" class="sub-menu-link">Блесни -  въртящи
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/lures-7/blesni-klatushki" class="sub-menu-link">Блесни - клатушки
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/lures-7/pilkeri-djigove" class="sub-menu-link">Пилкери / Джигове
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/lures-7/meki-primamki-silikoni" class="sub-menu-link">Меки примамки / Силикони
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/lures-7/game-fishing" class="sub-menu-link">Game fishing
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/lures-7/kalmarki" class="sub-menu-link">Калмарки
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/lures-7/glavi" class="sub-menu-link">Глави
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/lures-7/drugi" class="sub-menu-link">Други
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li></ul></li> <li class="nav-item dropdown"><a href="/pluvki-2" class="nav-link dropdown-toggle ">Плувки</a> <button class="nav-link d-xl-none dropdown-toggle ">Плувки</button> <div class="dropdown-btn d-xl-none d-block"><i aria-hidden="true" class="fa fa-angle-down"></i></div> <ul class="dropdown-menu"><li class="sub-menu-item "><a href="/floats-2/stacionarni" class="sub-menu-link">Стационарни плувки
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/floats-2/podvijni" class="sub-menu-link">Подвижни плувки
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/floats-2/vagleri-slaideri" class="sub-menu-link">Ваглери и слайдери
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/floats-2/drugi-pluvki" class="sub-menu-link">Други
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li></ul></li> <li class="nav-item dropdown"><a href="/podhranki-8" class="nav-link dropdown-toggle ">Подхранки</a> <button class="nav-link d-xl-none dropdown-toggle ">Подхранки</button> <div class="dropdown-btn d-xl-none d-block"><i aria-hidden="true" class="fa fa-angle-down"></i></div> <ul class="dropdown-menu"><li class="sub-menu-item "><a href="/groundbaits-8/podhranka" class="sub-menu-link">Подхранка
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/groundbaits-8/topcheta-granuli" class="sub-menu-link">Топчета и гранули
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/groundbaits-8/dobavki" class="sub-menu-link">Добавки
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/groundbaits-8/semena" class="sub-menu-link">Семена
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/groundbaits-8/pasti" class="sub-menu-link">Пасти
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/groundbaits-8/drugi-55" class="sub-menu-link">Други
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li></ul></li> <li class="nav-item dropdown"><a href="/troling-9" class="nav-link dropdown-toggle ">Тролинг</a> <button class="nav-link d-xl-none dropdown-toggle ">Тролинг</button> <div class="dropdown-btn d-xl-none d-block"><i aria-hidden="true" class="fa fa-angle-down"></i></div> <ul class="dropdown-menu"><li class="sub-menu-item "><a href="/trolling-9/sonari-humminbird-29" class="sub-menu-link">Сонари Humminbird
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/trolling-9/sonari-ibobber-369" class="sub-menu-link">Сонари iBobber
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/trolling-9/lodki-tohamaran-21" class="sub-menu-link">Лодки
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/trolling-9/kayatzi-feelfree-309" class="sub-menu-link">Каяци Feelfree
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/trolling-9/elektricheski-dvigateli-minn-kota-28" class="sub-menu-link">Ел. двигатели Minn Kota
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/trolling-9/karti-203" class="sub-menu-link">Карти
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/trolling-9/aksesoari-za-troling-62" class="sub-menu-link">Аксесоари за тролинг
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li></ul></li> <li class="nav-item dropdown"><a href="/obleklo-11" class="nav-link dropdown-toggle ">Облекло</a> <button class="nav-link d-xl-none dropdown-toggle ">Облекло</button> <div class="dropdown-btn d-xl-none d-block"><i aria-hidden="true" class="fa fa-angle-down"></i></div> <ul class="dropdown-menu"><li class="sub-menu-item "><a href="/clothing-11/bluzi-i-rizi-159" class="sub-menu-link">Тениски и блузи
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/clothing-11/pantaloni-59" class="sub-menu-link">Панталони
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/clothing-11/vrahno-obleklo-373" class="sub-menu-link">Якета, суичъри и елеци
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/clothing-11/gashterizoni-406" class="sub-menu-link">Комплекти и костюми
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/clothing-11/shapki-133" class="sub-menu-link">Шапки и бандани
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/clothing-11/rakavitzi-210" class="sub-menu-link">Ръкавици
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/clothing-11/obuvki-100" class="sub-menu-link">Обувки, ботуши и гащеризони
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/clothing-11/ochila-206" class="sub-menu-link">Очила
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/clothing-11/drugi-204" class="sub-menu-link">Други
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li></ul></li> <li class="nav-item dropdown"><a href="/aksesoari-5" class="nav-link dropdown-toggle ">Аксесоари</a> <button class="nav-link d-xl-none dropdown-toggle ">Аксесоари</button> <div class="dropdown-btn d-xl-none d-block"><i aria-hidden="true" class="fa fa-angle-down"></i></div> <ul class="dropdown-menu"><li class="sub-menu-item "><a href="/accessories-5/zhivarnitzi-i-kepcheta-404" class="sub-menu-link">Живарници и кепчета
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/accessories-5/tezhesti-149" class="sub-menu-link">Тежести
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/accessories-5/prashki-220" class="sub-menu-link">Прашки
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/accessories-5/vodachi-rodbilding-223" class="sub-menu-link">Материали и аксесоари за производство
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/accessories-5/virbeli-43" class="sub-menu-link">Вирбели
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/accessories-5/sharanski-ribolov-35" class="sub-menu-link">Шарански Риболов
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/accessories-5/ribolov-na-shtuka-i-som-98" class="sub-menu-link">Риболов на щука и сом
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/accessories-5/muharski-ribolov-74" class="sub-menu-link">Мухарски риболов
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/accessories-5/ribolov-s-shteka-i-mach-69" class="sub-menu-link">Риболов с щека и мач
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/accessories-5/morski-ribolov-141" class="sub-menu-link">Морски риболов
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/accessories-5/zimen-ribolov-144" class="sub-menu-link">Зимен риболов
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/accessories-5/nozhove-221" class="sub-menu-link">Ножове
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/accessories-5/kutii-koshcheta-i-kalafi-95" class="sub-menu-link">Кутии, кошчета и калъфи
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/accessories-5/stolove-chadari-i-palatki-51" class="sub-menu-link">Столове, чадъри и палатки
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/accessories-5/grizha-za-takama-157" class="sub-menu-link">Грижа за такъма
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li> <li class="sub-menu-item "><a href="/accessories-5/aksesoari-drugi-34" class="sub-menu-link">Aксесоари други
+                                                                                                                    </a> <ul data-dropdown-menu="" class="sub-menu dropdown menu 0 white-background"></ul></li></ul></li> <li class="nav-item nav-item bottom-menu d-xl-none d-block"><a href="/contacts" class="nav-link">Контакти</a></li> <li class="nav-item d-xl-none"><a href="/distributors" class="nav-link">
+                                            Дилъри
+                                        </a></li> <li class="nav-item user ml-xl-auto d-xl-flex d-none"><img src="/build/images/icons/user.svg" alt="search icon"> <a href="/login">Вход</a>
+                                        /
+                                        <a href="/registration">Регистрация</a></li> <li class="nav-item language ml-xl-auto d-xl-none"><a href="https://filstar.com/en/search?term=945984" class="nav-link"><img src="/build/images/icons/en_flag.svg" alt="flag icon">
+                                                English
+                                            </a></li> <li id="myCart" class="nav-item cart d-xl-flex d-none"><script type="text/x-template" id="cart-widget">
+    <div class="d-xl-block d-inline-block" style="vertical-align: middle">
+        <div class="d-flex align-items-center">
+            <div class="cart-image">
+                <a class="d-xl-block d-none" href="javascript:;">
+                    <img class="d-xl-inline d-none" src="/build/images/icons/shopping-cart.svg" alt="cart icon"/>
+                    <img src="/build/images/icons/mobile_cart.svg" alt=""
+                         class="mobile_cart d-xl-none"/>
+                    <span class="products-counter" v-text="selectedStoreRowsQuantity"></span>
+                </a>
+                <a class="d-xl-none" href="/cart">
+                    <img class="d-xl-inline d-none" src="/build/images/icons/shopping-cart.svg" alt="cart icon"/>
+                    <img src="/build/images/icons/mobile_cart.svg" alt=""
+                         class="mobile_cart d-xl-none"/>
+                    <span class="products-counter" v-text="selectedStoreRowsQuantity"></span>
+                </a>
+            </div>
+            <a class="cart-text d-xl-block d-none" href="javascript:;">Моята количка</a>
+        </div>
+        <div class="modal-cart">
+                                    <div class="modal-cart-body">
+                <div class="product d-flex align-items-center" v-if="!cart.quantity && !loading">
+                    Все още не сте добавили продукти.
+                </div>
+                <div class="product d-flex align-items-center" v-if="!loading" v-for="row in selectedStoreRows">
+                    <div class="delete">
+                        <div @click="removeRow(row.id, removeCartRowUrl)" class="product-remove">
+                            <img src="/build/images/icons/DeleteIcon.svg" alt="delete icon"/>
+                        </div>
+                    </div>
+                    <div class="image">
+
+                        <a :href="row.href">
+                            <img :src="row.image" :alt="row.name"/>
+                        </a>
+                    </div>
+                    <div class="name-price">
+                        <h5>
+                            <a class="product-title" :href="row.href">[[row.name]] [[row.year]]</a>
+                        </h5>
+                        <strike v-if="row.originalPrice !== row.price" v-text="formattedPrice(row.originalPrice, '', true)"></strike>
+                       <div class="d-md-flex mt-1">
+                           <h6 v-text="formattedPrice(row.price)"></h6>
+                       </div>
+                    </div>
+                    <div class="count d-flex align-items-center">
+                        <a @click="decrementQuantity(row)">
+                            <img src="/build/images/icons/minus.png" alt="" class=""/>
+                        </a>
+                        <input type="number" readonly="readonly" v-model="row.quantity">
+                        <a @click="incrementRowQuantity(row)">
+                            <img src="/build/images/icons/plus1.png" alt="" class=""/>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-cart-footer" v-if="cart.quantity && !loading">
+                                <div class="p-2 text-center">[[ cart.freeShippingLabel ]]</div>
+                                <div class="total-price-holder">
+                    <div class="info-content d-flex align-items-center" v-if="cart.quantity">
+                        <p>Общо:</p>
+                        <div class="d-flex">
+                            <p class="big-number" v-text="total"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="go-to-cart-box">
+                    <a href="/cart" class="main-button normal premier">Виж количката</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</script> <div class="d-xl-block d-inline-block" style="vertical-align: middle;"><div class="d-flex align-items-center"><div class="cart-image"><a href="javascript:;" class="d-xl-block d-none"><img src="/build/images/icons/shopping-cart.svg" alt="cart icon" class="d-xl-inline d-none"> <img src="/build/images/icons/mobile_cart.svg" alt="" class="mobile_cart d-xl-none"> <span class="products-counter">0</span></a> <a href="/cart" class="d-xl-none"><img src="/build/images/icons/shopping-cart.svg" alt="cart icon" class="d-xl-inline d-none"> <img src="/build/images/icons/mobile_cart.svg" alt="" class="mobile_cart d-xl-none"> <span class="products-counter">0</span></a></div> <a href="javascript:;" class="cart-text d-xl-block d-none">Моята количка</a></div> <div class="modal-cart"><div class="modal-cart-body"><div class="product d-flex align-items-center">
+                    Все още не сте добавили продукти.
+                </div> </div> <!----></div></div></li></ul></div></nav></div></div></header> <div id="flash-messages-wrapper"></div> <main class="page categories products-listing"><div class="page-content"><section class="products-listing-main-header"><div class="container-fluid px-0"><div class="row no-gutters"><div class="col-xl-6 d-flex"><div class="left-side pt-2"><div><h1>Търсене на продукти</h1></div></div></div> <div class="col-xl-6"><div class="right-side"><div class="cat-image-round" style="background: url(&quot;/build/images/Search-Results.png&quot;) 0% 0% / cover;"></div></div></div></div></div></section> <section class="products-listing-view-holder"><div class="container"><div class="row"><div class="col-xl-auto"><button class="filter-btn toggle-filters d-block d-xl-none">Покажи/Скрий филтрите</button> <div class="attributes"><div class="available-products"></div> <a href="/search?term=945984" class="clear-btn"><img src="/build/images/icons/plus_pink.svg" alt="clear icon">
+                                    Изчисти филтрите</a> <aside class="sidebar active"><div class="widgets"><script type="text/x-template" id="filter-widget">
+    <div class="attributes-box-holder" :class="{'widget-active': open}">
+        <p v-text="title"></p>
+        <div class="attributes-content">
+
+            <div class="filter-list">
+                <ul>
+                    <li v-for="entry in availableEntries" v-if="entry.selected" :class="{'selected': entry.selected}" class="d-block align-items-center justify-content-between">
+                        <label class="form-check-container d-flex justify-content-between">
+                            <input type="checkbox" @click="selectEntry(entry)"  :checked="entry.selected" class="form-check-input filter-check" >
+                            <span class="checkmark"></span>
+                            <span class="attr-info" v-html="entry.value"></span>
+                            <span class="badge bg-info text-white rounded-pill px-2"  style="line-height: 1.5;" v-if="entry.cntProducts" v-html="entry.cntProducts"></span>
+                        </label>
+                    </li>
+                    <li v-for="entry in availableEntries" v-if="!entry.selected" :class="{'selected': entry.selected}" class="d-block align-items-center justify-content-between">
+                        <label class="form-check-container d-flex justify-content-between">
+                            <input type="checkbox" @click="selectEntry(entry)"  :checked="entry.selected" class="form-check-input filter-check" >
+                            <span class="checkmark"></span>
+                            <span class="attr-info" v-html="entry.value"></span>
+                            <span class="badge bg-info text-white rounded-pill px-2"  style="line-height: 1.5;" v-if="entry.cntProducts" v-html="entry.cntProducts"></span>
+                        </label>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</script></div> <a href="#" type="button" class="filter-btn d-block d-xl-none">ФИЛТРИРАЙ</a></aside></div></div> <div class="col-xl"><div class="products-view-cards-holder"><div class="d-flex align-items-center justify-content-between filters-section flex-wrap "><div class="filter-by-price-new"><p><span>Подреди по:</span> <a data-controller="sort" data-value="price_asc" class="price-order" style="cursor: pointer;"><img src="/build/images/icons/up-and-down.svg" data-controller="sort" data-value="price_asc" alt="up-and-down icon">
+                                                Цена
+                                            </a> <a data-controller="sort" data-value="createdAt_desc" class="price-order" style="cursor: pointer;"><img src="/build/images/icons/new.svg" data-controller="sort" data-value="createdAt_desc" alt="new icon">
+                                                Най-нови
+                                            </a></p></div> <div class="grid-filter"><p><span>ПОКАЖИ</span> <button class="first-type-btn border-0"><svg id="grid" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" class="active"><g id="Group_1392" data-name="Group 1392"><g id="Group_1391" data-name="Group 1391"><path id="Path_613" data-name="Path 613" d="M8.462,0H.769A.769.769,0,0,0,0,.769V8.462a.769.769,0,0,0,.769.769H8.462a.769.769,0,0,0,.769-.769V.769A.769.769,0,0,0,8.462,0Z" class="cls-1"></path> <path id="Path_614" data-name="Path 614" d="M154.747,0h-7.692a.769.769,0,0,0-.769.769V8.462a.769.769,0,0,0,.769.769h7.692a.769.769,0,0,0,.769-.769V.769A.769.769,0,0,0,154.747,0Z" transform="translate(-135.516 0)" class="cls-1"></path> <path id="Path_615" data-name="Path 615" d="M8.462,146.286H.769a.769.769,0,0,0-.769.769v7.692a.769.769,0,0,0,.769.769H8.462a.769.769,0,0,0,.769-.769v-7.692A.769.769,0,0,0,8.462,146.286Z" transform="translate(0 -135.517)" class="cls-1"></path> <path id="Path_616" data-name="Path 616" d="M154.747,146.286h-7.692a.769.769,0,0,0-.769.769v7.692a.769.769,0,0,0,.769.769h7.692a.769.769,0,0,0,.769-.769v-7.692A.769.769,0,0,0,154.747,146.286Z" transform="translate(-135.516 -135.517)" class="cls-1"></path></g></g></svg></button> <button class="sec-type-btn border-0"><svg id="list" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25.454 20"><g data-name="list" transform="translate(0 -54.814)"><g id="Group_1390" data-name="Group 1390" transform="translate(0 54.814)"><path id="Path_607" data-name="Path 607" d="M5.909,201H1.363a1.315,1.315,0,0,0-.966.4,1.315,1.315,0,0,0-.4.966v2.728a1.314,1.314,0,0,0,.4.965,1.315,1.315,0,0,0,.966.4H5.909a1.358,1.358,0,0,0,1.363-1.363v-2.728A1.358,1.358,0,0,0,5.909,201Z" transform="translate(0 -193.726)" class="cls-2"></path> <path id="Path_608" data-name="Path 608" d="M5.909,54.814H1.363a1.315,1.315,0,0,0-.966.4,1.315,1.315,0,0,0-.4.966V58.9a1.315,1.315,0,0,0,.4.966,1.316,1.316,0,0,0,.966.4H5.909a1.358,1.358,0,0,0,1.363-1.364V56.178a1.358,1.358,0,0,0-1.363-1.364Z" transform="translate(0 -54.814)" class="cls-2"></path> <path id="Path_609" data-name="Path 609" d="M5.909,347.177H1.363a1.315,1.315,0,0,0-.966.4,1.315,1.315,0,0,0-.4.966v2.728a1.314,1.314,0,0,0,.4.966,1.315,1.315,0,0,0,.966.4H5.909a1.358,1.358,0,0,0,1.363-1.363v-2.728a1.358,1.358,0,0,0-1.363-1.364Z" transform="translate(0 -332.632)" class="cls-2"></path> <path id="Path_610" data-name="Path 610" d="M197.725,201H184.088a1.358,1.358,0,0,0-1.363,1.364v2.728a1.358,1.358,0,0,0,1.363,1.363h13.636a1.358,1.358,0,0,0,1.363-1.363v-2.728A1.358,1.358,0,0,0,197.725,201Z" transform="translate(-173.634 -193.726)" class="cls-2"></path> <path id="Path_611" data-name="Path 611" d="M197.725,347.177H184.088a1.358,1.358,0,0,0-1.363,1.363v2.728a1.357,1.357,0,0,0,1.363,1.363h13.636a1.357,1.357,0,0,0,1.363-1.363V348.54a1.358,1.358,0,0,0-1.364-1.363Z" transform="translate(-173.634 -332.632)" class="cls-2"></path> <path id="Path_612" data-name="Path 612" d="M198.69,55.216a1.315,1.315,0,0,0-.966-.4H184.088a1.358,1.358,0,0,0-1.363,1.364v2.727a1.358,1.358,0,0,0,1.363,1.364h13.636a1.358,1.358,0,0,0,1.363-1.364V56.182A1.314,1.314,0,0,0,198.69,55.216Z" transform="translate(-173.634 -54.818)" class="cls-2"></path></g></g></svg></button></p></div></div> <div class="products-list first-type "><div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-4"></div></div> <div class="products-list sec-type "><div class="row flex-wrap products-list-holder"><div class="container"><div class="product-listing-grid row"></div></div></div></div> <div><div class="empty-category text-center"><img src="/build/images/icons/empty-box.svg" alt="Empty box icon" class="mb-2"> <h3>Няма намерени продукти</h3> <p>За съжаление не успяхме да открием търсените от вас продукти.</p></div></div> <script type="text/x-template" id="ajax-pagination">
+    <div>
+        <div v-html="allAjaxResults">
+
+        </div>
+        <div class="d-flex flex-wrap load-more-products">
+            <div class="info col-12 mb-3">
+                <p>
+                    Показва
+                    <span>[[ totalShownItems ]]</span>
+                    продукта от
+                    <span>[[ totalItems ]]</span>
+                    налични в каталога
+                </p>
+            </div>
+            <a v-if="totalShownItems < totalItems" @click="getMoreResults()" class="main-button normal ghoast">
+                ВИЖТЕ СЛЕДВАЩИТЕ  [[ nextPageResults ]] ПРОДУКТА
+            </a>
+        </div>
+    </div>
+</script> <div><div></div> <div class="d-flex flex-wrap load-more-products"><div class="info col-12 mb-3"><p>
+                    Показва
+                    <span>0</span>
+                    продукта от
+                    <span>0</span>
+                    налични в каталога
+                </p></div> <!----></div></div></div></div></div></div></section></div></main> <div id="checkout-modal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true" class="modal fade checkout-modal pr-0"><div class="checkout-modal-dialog modal-dialog modal-dialog-centered"><div class="modal-content"><button type="button" data-dismiss="modal" aria-label="Close" class="close"><span aria-hidden="true">×</span></button> <div class="hint"><div id="success">
+                    Успешно добавихте продукта в количката
+                </div> <div id="fail">
+                    Не може да добавите продукта в количката.
+                </div> <img width="50px" src="/build/images/icons/shopping-bag-success.svg" alt="cart icon" class="icn"></div> <div class="row no-gutters"><div class="col-12 mb-3"><button type="button" data-dismiss="modal" class="main-button normal ghoast">Продължи с пазаруването</button></div> <div class="col-12"><a href="/cart" class="main-button normal secondary">Към количката</a></div></div></div></div></div> <footer class="main-footer"><div class="container"><div class="row"><div class="col-xl-5 left-side"><div class="footer-links"><h3>За FILSTAR</h3> <ul class="footer-menu"><li><a href="https://filstar.com/za-nas" target="_self">
+                                                                За нас
+                                                            </a></li> <li><a href="https://filstar.com/contacts" target="_self">
+                                                                Контакти
+                                                            </a></li> <li><a href="https://filstar.com/projects" target="_self">
+                                                                Проекти
+                                                            </a></li> <li><a href="https://blog.filstar.com/" target="_blank">
+                                                                Блог
+                                                            </a></li> <li><a href="https://filstar.com/catalogs" target="_self">
+                                                                Каталози
+                                                            </a></li> <li><a href="https://filstar.com/distributors" target="_self">
+                                                                Дилъри
+                                                            </a></li></ul></div> <div class="footer-links"><h3>За посетители</h3> <ul class="footer-menu"><li><a href="https://filstar.com/terms" target="_self">
+                                                                Общи условия
+                                                            </a></li> <li><a href="https://filstar.com/Dostavka" target="_self">
+                                                                Доставка и връщане
+                                                            </a></li> <li><a href="https://filstar.com/Plashtane" target="_self">
+                                                                Плащане
+                                                            </a></li> <li><a href="https://filstar.com/GDPR-i-cookies" target="_self">
+                                                                GDPR и бисквитки
+                                                            </a></li> <li><a href="https://filstar.com/Vaprosi" target="_self">
+                                                                ЧЗВ
+                                                            </a></li></ul></div></div> <div class="col-xl-7 right-side"><div class="info-bulletin"><div class="info-bulletin-header"><h3>Бюлетин</h3> <p>Получавайте първи промоции и интересни новини</p></div> <div id="subscription-form-global" data-controller="subscription" data-subscription-url="/subscription-form" class="info-bulletin-body"><form name="newsletter_global" method="post" data-action="submit-&gt;subscription#submitForm" class="form-inline" novalidate=""><input type="email" id="newsletter_global_email" name="newsletter_global[email]" placeholder="Имейл" data-error-message="Моля, въведете Вашия имейл адрес." class="form-control mr-sm-2 required form-control"> <button id="newsletter_submit_btn" type="submit" class="main-button normal premier">ЗАПИШЕТЕ СЕ</button> <div id="form-message-success" style="margin: 0px;"><div class="alert alert-success">Вие се записахте успешно за нашия бюлетин.</div></div> <div id="form-message-error" style="margin: 0px;"><div class="alert alert-danger">Възникна грешка, моля опитайте по-късно.</div></div> <div id="form-request-error" class="form-error" style="display: none;"><div class="alert alert-danger"></div></div> <div class="form-check"><input type="checkbox" data-error-message="Моля, приемете условията за ползване." name="terms" value="1" id="defaultCheck1" class="form-check-input required"> <label for="defaultCheck1" class="form-check-label"><span>Съгласен съм с </span> <a href="/terms" target="_blank" class="mx-1"> Общите условия за ползване </a> <span> на К и К ООД</span></label></div> <input type="hidden" id="newsletter_global_captcha" name="newsletter_global[captcha]" data-controller="captcha" data-api-key="6LfAu70rAAAAABxvGPPaMykuTrnpAau7vZHXotqp"><input type="hidden" id="newsletter_global__token" name="newsletter_global[_token]" value="mXFIbNP65eGZ6bCfPqv5ygCjdZfN7rN6sGLFgjq7eVA"></form></div> <div class="info-bulletin-footer"><div class="row"><div class="col-xl-3 social-networks"><h4>Последвайте ни</h4> <ul><li><a href="https://www.facebook.com/FilstarFishing/" target="_blank"><img src="/build/images/icons/facebook-logo-button.svg" alt="Facebook icon"></a></li> <li><a href="https://www.instagram.com/filstarfishing/" target="_blank"><img src="/build/images/icons/instagram-logo.svg" alt="Facebook icon"></a></li> <li><a href="https://www.youtube.com/user/FilStarLtd" target="_blank"><img src="/build/images/icons/youtube-logotype.svg" alt="Facebook icon"></a></li></ul></div> <div class="col-xl-9 other-websites"><h4>ОЩЕ ОТ FILSTAR</h4> <ul><li><a href="https://www.fishing-floats.com/" target="_blank" class="main-button white">Fishing Floats</a></li> <li><a href="https://filstar.com/trolling-9/sonari-humminbird-29" target="_blank" class="main-button white">Humminbird.bg</a></li> <li><a href="https://fishingtour.filstar.com/" target="_blank" class="main-button white">Fishingtour.filstar.com</a></li></ul></div></div></div></div></div></div></div></footer> <a href="#" class="back-to-top"><img src="/build/images/icons/arrow-up.svg" alt="arrow logo"></a></div>
+
+<div class="cookies flex-lg-row flex-column justify-content-between show" id="cookie-banner">
+    <div class="d-xl-flex text-left align-items-center cookies-a">
+        Тази страница използва <a href="/GDPR-i-cookies" target="_blank">
+            "бисквитки"</a> , за да подобри начина си на представяне и своята функционалност.
+    </div>
+    <div class="cookies-btn d-flex buttons mt-lg-0 mt-2">
+        <button class="button" id="accept-cookies">Приемам бисквитките</button>
+    </div>
+</div>
+<div class="global-loader" style="display:none;">
+    <span class="lds-ellipsis">
+        <div></div>
+        <div></div>
+        <div></div>
+    </span>
+</div>
+
+
+    <script src="/build/runtime.d94b3b43.js"></script><script src="/build/0.33ab806c.js"></script><script src="/build/2.894e9701.js"></script><script src="/build/app.458cf427.js"></script>
+
+            
+    
+
+
+<script defer="" src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon="{&quot;version&quot;:&quot;2024.11.0&quot;,&quot;token&quot;:&quot;92193b7a7ef447e3baf52d406814571b&quot;,&quot;r&quot;:1,&quot;server_timing&quot;:{&quot;name&quot;:{&quot;cfCacheStatus&quot;:true,&quot;cfEdge&quot;:true,&quot;cfExtPri&quot;:true,&quot;cfL4&quot;:true,&quot;cfOrigin&quot;:true,&quot;cfSpeedBrain&quot;:true},&quot;location_startswith&quot;:null}}" crossorigin="anonymous"></script>
+
+
+<div id="lightboxOverlay" tabindex="-1" class="lightboxOverlay" style="display: none;"></div><div id="lightbox" tabindex="-1" class="lightbox" style="display: none;"><div class="lb-outerContainer"><div class="lb-container"><img class="lb-image" src="data:image/gif;base64,R0lGODlhAQABAIAAAP///wAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==" alt=""><div class="lb-nav"><a class="lb-prev" aria-label="Previous image" href=""></a><a class="lb-next" aria-label="Next image" href=""></a></div><div class="lb-loader"><a class="lb-cancel"></a></div></div></div><div class="lb-dataContainer"><div class="lb-data"><div class="lb-details"><span class="lb-caption"></span><span class="lb-number"></span></div><div class="lb-closeContainer"><a class="lb-close"></a></div></div></div></div></body></html>
