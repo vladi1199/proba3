@@ -30,12 +30,14 @@
             
                     <link rel="alternate" hreflang="en" href="https://filstar.com/en/search?term=944768">
                     <link rel="alternate" hreflang="bg" href="https://filstar.com/search?term=944768">
+                    <link rel="alternate" hreflang="ro" href="https://filstar.com/ro/search?term=944768">
+                    <link rel="alternate" hreflang="el" href="https://filstar.com/el/search?term=944768">
             
 
-            <link rel="stylesheet" href="/build/vendors~adminApp~app.css"><link rel="stylesheet" href="/build/vendors~app.css"><link rel="stylesheet" href="/build/app.css">
+            <link rel="stylesheet" href="/build/0.10ce7f60.css"><link rel="stylesheet" href="/build/2.76dd3e7b.css"><link rel="stylesheet" href="/build/app.c3fb78f7.css">
     
                     <!-- Global site tag (gtag.js) - Google Analytics -->
-            <script type="text/javascript" async="" src="https://www.google-analytics.com/analytics.js"></script><script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-ECXJW15GJF&amp;cx=c&amp;gtm=4e65j1"></script><script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-36261628-1"></script>
+            <script type="text/javascript" async="" src="https://www.google-analytics.com/analytics.js"></script><script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-ECXJW15GJF&amp;cx=c&amp;gtm=4e65k1"></script><script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-36261628-1"></script>
             <script>
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
@@ -45,7 +47,16 @@
         </head>
 
 <body data-controller="gtm" data-object="user" data-main="1" data-data="">
-<div id="app"><header><div class="container-fluid px-0"><div data-controller="page-view" data-unique-event-id="" class="top-header"><nav class="navbar navbar-expand-xl"><a href="/" class="navbar-brand"><img src="/build/images/icons/filstar_logo_new.svg" alt="logo image" class="img-fluid logo"></a> <div class="mobile-content-icons"><div class="nav-item language d-xl-none d-inline-block align-middle"><a href="https://filstar.com/en/search?term=944768"><img width="32px" src="/build/images/icons/en_flag.svg" alt="flag icon" class="ml-0"></a></div> <a href="/login"><img width="32px" src="/build/images/icons/user.svg" alt="user icon" class="user-icn"></a> <script type="text/x-template" id="cart-widget">
+<div id="app"><header><div class="container-fluid px-0"><div data-controller="page-view" data-unique-event-id="" class="top-header"><nav class="navbar navbar-expand-xl"><a href="/" class="navbar-brand"><img src="/build/images/icons/filstar_logo_new.svg" alt="logo image" class="img-fluid logo"></a> <div class="mobile-content-icons"><div class="nav-item language d-xl-none d-inline-block align-middle mr-1"><div class="dropdown"><a href="#" id="languageDropdownTabletSec" type="button" data-toggle="dropdown" aria-expanded="false" class="nav-link dropdown-toggle d-flex align-items-center p-0"><img src="/build/images/icons/bg_flag.svg" alt="flag icon" width="32px" class="mx-0"></a> <div aria-labelledby="languageDropdownTabletSec" class="dropdown-menu"><a href="https://filstar.com/en/search?term=944768" class="dropdown-item py-2 px-0"><img src="/build/images/icons/en_flag.svg" alt="flag icon" width="20" class="mr-1">
+
+                                                    English
+                                                </a> <a href="https://filstar.com/ro/search?term=944768" class="dropdown-item py-2 px-0"><img src="/build/images/icons/ro_flag.svg" alt="flag icon" width="20" class="mr-1">
+
+                                                    Română
+                                                </a> <a href="https://filstar.com/el/search?term=944768" class="dropdown-item py-2 px-0"><img src="/build/images/icons/el_flag.svg" alt="flag icon" width="20" class="mr-1">
+
+                                                    ελληνικά
+                                                </a></div></div></div> <a href="/login"><img width="32px" src="/build/images/icons/user.svg" alt="user icon" class="user-icn"></a> <script type="text/x-template" id="cart-widget">
     <div class="d-xl-block d-inline-block" style="vertical-align: middle">
         <div class="d-flex align-items-center">
             <div class="cart-image">
@@ -65,7 +76,15 @@
             <a class="cart-text d-xl-block d-none" href="javascript:;">Моята количка</a>
         </div>
         <div class="modal-cart">
-                                    <div class="modal-cart-body">
+            <div class="modal-cart-header d-flex align-items-center" v-if="cart.canSelectStore">
+                <p>Поръчка от склад:</p>
+                <div class="warehouses">
+                    <a @click="selectStore(store)" href="#" :class="{active: (selectedStore && store.id === selectedStore.id)}"  v-for="store in stores">
+                        <span>[[ store.name ]]</span>
+                    </a>
+                </div>
+            </div>
+                        <div class="modal-cart-body">
                 <div class="product d-flex align-items-center" v-if="!cart.quantity && !loading">
                     Все още не сте добавили продукти.
                 </div>
@@ -103,8 +122,8 @@
 
             </div>
             <div class="modal-cart-footer" v-if="cart.quantity && !loading">
-                                <div class="p-2 text-center">[[ cart.freeShippingLabel ]]</div>
-                                <div class="total-price-holder">
+                <div class="p-2 text-center" v-if="cart.freeShippingLabel">[[ cart.freeShippingLabel ]]</div>
+                <div class="total-price-holder">
                     <div class="info-content d-flex align-items-center" v-if="cart.quantity">
                         <p>Общо:</p>
                         <div class="d-flex">
@@ -118,7 +137,7 @@
             </div>
         </div>
     </div>
-</script> <div class="d-xl-block d-inline-block" style="vertical-align: middle;"><div class="d-flex align-items-center"><div class="cart-image"><a href="javascript:;" class="d-xl-block d-none"><img src="/build/images/icons/shopping-cart.svg" alt="cart icon" class="d-xl-inline d-none"> <img src="/build/images/icons/mobile_cart.svg" alt="" class="mobile_cart d-xl-none"> <span class="products-counter">0</span></a> <a href="/cart" class="d-xl-none"><img src="/build/images/icons/shopping-cart.svg" alt="cart icon" class="d-xl-inline d-none"> <img src="/build/images/icons/mobile_cart.svg" alt="" class="mobile_cart d-xl-none"> <span class="products-counter">0</span></a></div> <a href="javascript:;" class="cart-text d-xl-block d-none">Моята количка</a></div> <div class="modal-cart"><div class="modal-cart-body"><div class="product d-flex align-items-center">
+</script> <div class="d-xl-block d-inline-block" style="vertical-align: middle;"><div class="d-flex align-items-center"><div class="cart-image"><a href="javascript:;" class="d-xl-block d-none"><img src="/build/images/icons/shopping-cart.svg" alt="cart icon" class="d-xl-inline d-none"> <img src="/build/images/icons/mobile_cart.svg" alt="" class="mobile_cart d-xl-none"> <span class="products-counter">0</span></a> <a href="/cart" class="d-xl-none"><img src="/build/images/icons/shopping-cart.svg" alt="cart icon" class="d-xl-inline d-none"> <img src="/build/images/icons/mobile_cart.svg" alt="" class="mobile_cart d-xl-none"> <span class="products-counter">0</span></a></div> <a href="javascript:;" class="cart-text d-xl-block d-none">Моята количка</a></div> <div class="modal-cart"><!----> <div class="modal-cart-body"><div class="product d-flex align-items-center">
                     Все още не сте добавили продукти.
                 </div> </div> <!----></div></div> <button type="button" data-toggle="collapse" aria-controls="openMobileNavbar" data-target="#openMobileNavbar" aria-expanded="false" aria-label="Toggle navigation" class="navbar-toggler open-mobile-menu"><span class="navbar-toggler-icon"><img src="/build/images/icons/mobile_menu.svg" alt="" class="menu-icon"></span></button></div> <script type="text/x-template" id="search-autocomplete">
     <form action="/search" method="get" class="form-inline only-for-desktop">
@@ -134,7 +153,7 @@
                     [[ product.name ]] [[ product.year ]]
                 </a>
             </div>
-            <a :href="fullSearchUrl" v-if="results.length && results.length === 6 && moreResultCount > 0"
+            <a :href="fullSearchUrl" v-if="results.length && results.length >= 5 && moreResultCount > 0"
                class="more-results">
                 Виж още [[moreResultCount]] резултата
             </a>
@@ -148,9 +167,16 @@
             </div>
         </div>
     </form>
-</script> <form action="/search" method="get" class="form-inline only-for-desktop" novalidate=""><input autocomplete="off" required="required" type="text" name="term" placeholder="Какво търсите днес?"> <button class="search-button"><img src="/build/images/icons/search-icon.svg" alt=""></button> <!----></form> <div id="" class="collapse navbar-collapse d-xl-flex d-none"><ul class="navbar-nav ml-auto"><li class="nav-item active"><a href="https://blog.filstar.com/" target="_blank" class="nav-link">Блог</a></li> <li class="nav-item"><a href="/distributors" class="nav-link">Дилъри</a></li> <li class="nav-item"><a href="/catalogs" class="nav-link">Каталози</a></li> <li class="nav-item"><a href="/za-nas" class="nav-link">За нас</a></li> <li class="nav-item"><a href="/contacts" class="nav-link">Контакти</a></li> <li class="nav-item phone-content"><a href="tel:+359884742185" class="nav-link">0884 742 185</a></li> <li class="nav-item language"><img src="/build/images/icons/en_flag.svg" alt="flag icon"> <a href="https://filstar.com/en/search?term=944768" class="nav-link">
-                                                English
-                                            </a></li> <li class="nav-item social-networks"><a href="https://www.facebook.com/FilstarFishing/" target="_blank"><img src="/build/images/icons/facebook-logo-button.svg" alt="flag icon"></a> <a href="https://www.instagram.com/filstarfishing/" target="_blank"><img src="/build/images/icons/instagram-logo.svg" alt="flag icon"></a> <a href="https://www.youtube.com/user/FilStarLtd" target="_blank"><img src="/build/images/icons/youtube-logotype.svg" alt="flag icon"></a></li></ul></div></nav></div> <div class="bottom-header mobile-menu"><div class="mobile-header d-xl-none"><p>Меню</p> <a href="#" class="close-mobile-menu"><img src="/build/images/icons/clear-button.png" alt="Remove icon"></a></div> <nav class="navbar navbar-expand"><div id="" class="collapse navbar-collapse mobile-body"><ul class="navbar-nav ml-auto"><li class="nav-item"><a href="/products/new" class="nav-link">
+</script> <form action="/search" method="get" class="form-inline only-for-desktop" novalidate=""><input autocomplete="off" required="required" type="text" name="term" placeholder="Какво търсите днес?"> <button class="search-button"><img src="/build/images/icons/search-icon.svg" alt=""></button> <!----></form> <div id="" class="collapse navbar-collapse d-xl-flex d-none"><ul class="navbar-nav ml-auto align-items-center"><li class="nav-item active"><a href="https://blog.filstar.com/" target="_blank" class="nav-link">Блог</a></li> <li class="nav-item"><a href="/distributors" class="nav-link">Дилъри</a></li> <li class="nav-item"><a href="/catalogs" class="nav-link">Каталози</a></li> <li class="nav-item"><a href="/za-nas" class="nav-link">За нас</a></li> <li class="nav-item"><a href="/contacts" class="nav-link">Контакти</a></li> <li class="nav-item phone-content"><a href="tel:+359884742185" class="nav-link">0884 742 185</a></li> <li class="nav-item language"><div class="dropdown"><a href="#" id="languageDropdown" type="button" data-toggle="dropdown" aria-expanded="false" class="nav-link dropdown-toggle d-flex align-items-center"><img src="/build/images/icons/bg_flag.svg" alt="flag icon" class="mr-2">
+
+                                            Български
+                                        </a> <div aria-labelledby="languageDropdown" class="dropdown-menu"><a href="https://filstar.com/en/search?term=944768" class="dropdown-item d-flex align-items-center"><img src="/build/images/icons/en_flag.svg" alt="flag icon" width="20" class="mr-2">
+                                                        English
+                                                    </a> <a href="https://filstar.com/ro/search?term=944768" class="dropdown-item d-flex align-items-center"><img src="/build/images/icons/ro_flag.svg" alt="flag icon" width="20" class="mr-2">
+                                                        Română
+                                                    </a> <a href="https://filstar.com/el/search?term=944768" class="dropdown-item d-flex align-items-center"><img src="/build/images/icons/el_flag.svg" alt="flag icon" width="20" class="mr-2">
+                                                        ελληνικά
+                                                    </a></div></div></li> <li class="nav-item social-networks"><a href="https://www.facebook.com/FilstarFishing/" target="_blank"><img src="/build/images/icons/facebook-logo-button.svg" alt="flag icon"></a> <a href="https://www.instagram.com/filstarfishing/" target="_blank"><img src="/build/images/icons/instagram-logo.svg" alt="flag icon"></a> <a href="https://www.youtube.com/user/FilStarLtd" target="_blank"><img src="/build/images/icons/youtube-logotype.svg" alt="flag icon"></a></li></ul></div></nav></div> <div class="bottom-header mobile-menu"><div class="mobile-header d-xl-none"><p>Меню</p> <a href="#" class="close-mobile-menu"><img src="/build/images/icons/clear-button.png" alt="Remove icon"></a></div> <nav class="navbar navbar-expand"><div id="" class="collapse navbar-collapse mobile-body"><ul class="navbar-nav ml-auto"><li class="nav-item"><a href="/products/new" class="nav-link">
                                         Нови
                                     </a></li> <li class="nav-item"><a href="/products/backinstock" class="nav-link">
                                         Отново на склад
@@ -236,9 +262,19 @@
                                             Дилъри
                                         </a></li> <li class="nav-item user ml-xl-auto d-xl-flex d-none"><img src="/build/images/icons/user.svg" alt="search icon"> <a href="/login">Вход</a>
                                         /
-                                        <a href="/registration">Регистрация</a></li> <li class="nav-item language ml-xl-auto d-xl-none"><a href="https://filstar.com/en/search?term=944768" class="nav-link"><img src="/build/images/icons/en_flag.svg" alt="flag icon">
-                                                English
-                                            </a></li> <li id="myCart" class="nav-item cart d-xl-flex d-none"><script type="text/x-template" id="cart-widget">
+                                        <a href="/registration">Регистрация</a></li> <li class="nav-item language ml-xl-auto d-xl-none"><div class="dropdown w-100"><a href="#" id="languageDropdownTablet" type="button" data-toggle="dropdown" aria-expanded="false" class="nav-link dropdown-toggle d-flex align-items-center p-0"><img src="/build/images/icons/bg_flag.svg" alt="flag icon" class="mr-2">
+
+                                            Български
+                                        </a> <div aria-labelledby="languageDropdownTablet" class="dropdown-menu"><a href="https://filstar.com/en/search?term=944768" class="dropdown-item"><img src="/build/images/icons/en_flag.svg" alt="flag icon" width="20" class="mr-2">
+
+                                                        English
+                                                    </a> <a href="https://filstar.com/ro/search?term=944768" class="dropdown-item"><img src="/build/images/icons/ro_flag.svg" alt="flag icon" width="20" class="mr-2">
+
+                                                        Română
+                                                    </a> <a href="https://filstar.com/el/search?term=944768" class="dropdown-item"><img src="/build/images/icons/el_flag.svg" alt="flag icon" width="20" class="mr-2">
+
+                                                        ελληνικά
+                                                    </a></div></div></li> <li id="myCart" class="nav-item cart d-xl-flex d-none"><script type="text/x-template" id="cart-widget">
     <div class="d-xl-block d-inline-block" style="vertical-align: middle">
         <div class="d-flex align-items-center">
             <div class="cart-image">
@@ -258,7 +294,15 @@
             <a class="cart-text d-xl-block d-none" href="javascript:;">Моята количка</a>
         </div>
         <div class="modal-cart">
-                                    <div class="modal-cart-body">
+            <div class="modal-cart-header d-flex align-items-center" v-if="cart.canSelectStore">
+                <p>Поръчка от склад:</p>
+                <div class="warehouses">
+                    <a @click="selectStore(store)" href="#" :class="{active: (selectedStore && store.id === selectedStore.id)}"  v-for="store in stores">
+                        <span>[[ store.name ]]</span>
+                    </a>
+                </div>
+            </div>
+                        <div class="modal-cart-body">
                 <div class="product d-flex align-items-center" v-if="!cart.quantity && !loading">
                     Все още не сте добавили продукти.
                 </div>
@@ -296,8 +340,8 @@
 
             </div>
             <div class="modal-cart-footer" v-if="cart.quantity && !loading">
-                                <div class="p-2 text-center">[[ cart.freeShippingLabel ]]</div>
-                                <div class="total-price-holder">
+                <div class="p-2 text-center" v-if="cart.freeShippingLabel">[[ cart.freeShippingLabel ]]</div>
+                <div class="total-price-holder">
                     <div class="info-content d-flex align-items-center" v-if="cart.quantity">
                         <p>Общо:</p>
                         <div class="d-flex">
@@ -311,7 +355,7 @@
             </div>
         </div>
     </div>
-</script> <div class="d-xl-block d-inline-block" style="vertical-align: middle;"><div class="d-flex align-items-center"><div class="cart-image"><a href="javascript:;" class="d-xl-block d-none"><img src="/build/images/icons/shopping-cart.svg" alt="cart icon" class="d-xl-inline d-none"> <img src="/build/images/icons/mobile_cart.svg" alt="" class="mobile_cart d-xl-none"> <span class="products-counter">0</span></a> <a href="/cart" class="d-xl-none"><img src="/build/images/icons/shopping-cart.svg" alt="cart icon" class="d-xl-inline d-none"> <img src="/build/images/icons/mobile_cart.svg" alt="" class="mobile_cart d-xl-none"> <span class="products-counter">0</span></a></div> <a href="javascript:;" class="cart-text d-xl-block d-none">Моята количка</a></div> <div class="modal-cart"><div class="modal-cart-body"><div class="product d-flex align-items-center">
+</script> <div class="d-xl-block d-inline-block" style="vertical-align: middle;"><div class="d-flex align-items-center"><div class="cart-image"><a href="javascript:;" class="d-xl-block d-none"><img src="/build/images/icons/shopping-cart.svg" alt="cart icon" class="d-xl-inline d-none"> <img src="/build/images/icons/mobile_cart.svg" alt="" class="mobile_cart d-xl-none"> <span class="products-counter">0</span></a> <a href="/cart" class="d-xl-none"><img src="/build/images/icons/shopping-cart.svg" alt="cart icon" class="d-xl-inline d-none"> <img src="/build/images/icons/mobile_cart.svg" alt="" class="mobile_cart d-xl-none"> <span class="products-counter">0</span></a></div> <a href="javascript:;" class="cart-text d-xl-block d-none">Моята количка</a></div> <div class="modal-cart"><!----> <div class="modal-cart-body"><div class="product d-flex align-items-center">
                     Все още не сте добавили продукти.
                 </div> </div> <!----></div></div></li></ul></div></nav></div></div></header> <div id="flash-messages-wrapper"></div> <main class="page categories products-listing"><div class="page-content"><section class="products-listing-main-header"><div class="container-fluid px-0"><div class="row no-gutters"><div class="col-xl-6 d-flex"><div class="left-side pt-2"><div><h1>Търсене на продукти</h1></div></div></div> <div class="col-xl-6"><div class="right-side"><div class="cat-image-round" style="background: url(&quot;/build/images/Search-Results.png&quot;) 0% 0% / cover;"></div></div></div></div></div></section> <section class="products-listing-view-holder"><div class="container"><div class="row"><div class="col-xl-auto"><button class="filter-btn toggle-filters d-block d-xl-none">Покажи/Скрий филтрите</button> <div class="attributes"><div class="available-products"></div> <a href="/search?term=944768" class="clear-btn"><img src="/build/images/icons/plus_pink.svg" alt="clear icon">
                                     Изчисти филтрите</a> <aside class="sidebar active"><div class="widgets"><script type="text/x-template" id="filter-widget">
@@ -375,7 +419,7 @@
                     Успешно добавихте продукта в количката
                 </div> <div id="fail">
                     Не може да добавите продукта в количката.
-                </div> <img width="50px" src="/build/images/icons/shopping-bag-success.svg" alt="cart icon" class="icn"></div> <div class="row no-gutters"><div class="col-12 mb-3"><button type="button" data-dismiss="modal" class="main-button normal ghoast">Продължи с пазаруването</button></div> <div class="col-12"><a href="/cart" class="main-button normal secondary">Към количката</a></div></div></div></div></div> <footer class="main-footer"><div class="container"><div class="row"><div class="col-xl-5 left-side"><div class="footer-links"><h3>За FILSTAR</h3> <ul class="footer-menu"><li><a href="https://filstar.com/za-nas" target="_self">
+                </div> <img width="50px" src="/build/images/icons/shopping-bag-success.svg" alt="cart icon" class="icn"></div> <div class="row no-gutters"><div class="col-12 mb-3"><button type="button" data-dismiss="modal" class="main-button normal ghoast">Продължи с пазаруването</button></div> <div class="col-12"><a href="/cart" class="main-button normal secondary">Към количката</a></div></div></div></div></div> <footer class="main-footer"><div class="container"><div class="row"><div class="col-xl-6 left-side"><div class="footer-links"><h3>За FILSTAR</h3> <ul class="footer-menu"><li><a href="https://filstar.com/za-nas" target="_self">
                                                                 За нас
                                                             </a></li> <li><a href="https://filstar.com/contacts" target="_self">
                                                                 Контакти
@@ -397,7 +441,7 @@
                                                                 GDPR и бисквитки
                                                             </a></li> <li><a href="https://filstar.com/Vaprosi" target="_self">
                                                                 ЧЗВ
-                                                            </a></li></ul></div></div> <div class="col-xl-7 right-side"><div class="info-bulletin"><div class="info-bulletin-header"><h3>Бюлетин</h3> <p>Получавайте първи промоции и интересни новини</p></div> <div id="subscription-form-global" data-controller="subscription" data-subscription-url="/subscription-form" class="info-bulletin-body"><form name="newsletter_global" method="post" data-action="submit-&gt;subscription#submitForm" class="form-inline" novalidate=""><input type="email" id="newsletter_global_email" name="newsletter_global[email]" placeholder="Имейл" data-error-message="Моля, въведете Вашия имейл адрес." class="form-control mr-sm-2 required form-control"> <button id="newsletter_submit_btn" type="submit" class="main-button normal premier">ЗАПИШЕТЕ СЕ</button> <div id="form-message-success" style="margin: 0px;"><div class="alert alert-success">Вие се записахте успешно за нашия бюлетин.</div></div> <div id="form-message-error" style="margin: 0px;"><div class="alert alert-danger">Възникна грешка, моля опитайте по-късно.</div></div> <div id="form-request-error" class="form-error" style="display: none;"><div class="alert alert-danger"></div></div> <div class="form-check"><input type="checkbox" data-error-message="Моля, приемете условията за ползване." name="terms" value="1" id="defaultCheck1" class="form-check-input required"> <label for="defaultCheck1" class="form-check-label"><span>Съгласен съм с </span> <a href="/terms" target="_blank" class="mx-1"> Общите условия за ползване </a> <span> на К и К ООД</span></label></div> <input type="hidden" id="newsletter_global_captcha" name="newsletter_global[captcha]" data-controller="captcha" data-api-key="6LfAu70rAAAAABxvGPPaMykuTrnpAau7vZHXotqp"><input type="hidden" id="newsletter_global__token" name="newsletter_global[_token]" value="4p4dHh1vBbTZ8LUKMCkD9ttskqLfvHKEKDUZGrsZv2o"></form></div> <div class="info-bulletin-footer"><div class="row justify-content-center justify-content-xl-start"><div class="col-xl-10 col-lg-7 col-md-8"><a target="_blank" href="https://www.filstar.com/bulgaria/pdf/Proekt.pdf?version=1779334924" class="d-block mb-4"><img src="/build/images/project-info-image.jpg" alt="Project info image" class="w-100"></a></div></div> <div class="row"><div class="col-xl-3 social-networks"><h4>Последвайте ни</h4> <ul><li><a href="https://www.facebook.com/FilstarFishing/" target="_blank"><img src="/build/images/icons/facebook-logo-button.svg" alt="Facebook icon"></a></li> <li><a href="https://www.instagram.com/filstarfishing/" target="_blank"><img src="/build/images/icons/instagram-logo.svg" alt="Facebook icon"></a></li> <li><a href="https://www.youtube.com/user/FilStarLtd" target="_blank"><img src="/build/images/icons/youtube-logotype.svg" alt="Facebook icon"></a></li></ul></div> <div class="col-xl-9 other-websites"><h4>ОЩЕ ОТ FILSTAR</h4> <ul><li><a href="https://www.fishing-floats.com/" target="_blank" class="main-button white">Fishing Floats</a></li> <li><a href="https://filstar.com/trolling-9/sonari-humminbird-29" target="_blank" class="main-button white">Humminbird.bg</a></li> <li><a href="https://fishingtour.filstar.com/" target="_blank" class="main-button white">Fishingtour.filstar.com</a></li></ul></div></div></div></div></div></div></div></footer> <a href="#" class="back-to-top"><img src="/build/images/icons/arrow-up.svg" alt="arrow logo"></a></div>
+                                                            </a></li></ul></div></div> <div class="col-xl-6 right-side"><div class="info-bulletin"><div class="info-bulletin-header"><h3>Бюлетин</h3> <p>Получавайте първи промоции и интересни новини</p></div> <div id="subscription-form-global" data-controller="subscription" data-subscription-url="/subscription-form" class="info-bulletin-body"><form name="newsletter_global" method="post" data-action="submit-&gt;subscription#submitForm" class="form-inline" novalidate=""><input type="email" id="newsletter_global_email" name="newsletter_global[email]" placeholder="Имейл" data-error-message="Моля, въведете Вашия имейл адрес." class="form-control mr-sm-2 required form-control"> <button id="newsletter_submit_btn" type="submit" class="main-button normal premier">ЗАПИШЕТЕ СЕ</button> <div id="form-message-success" style="margin: 0px;"><div class="alert alert-success">Вие се записахте успешно за нашия бюлетин.</div></div> <div id="form-message-error" style="margin: 0px;"><div class="alert alert-danger">Възникна грешка, моля опитайте по-късно.</div></div> <div id="form-request-error" class="form-error" style="display: none;"><div class="alert alert-danger"></div></div> <div class="form-check"><input type="checkbox" data-error-message="Моля, приемете условията за ползване." name="terms" value="1" id="defaultCheck1" class="form-check-input required"> <label for="defaultCheck1" class="form-check-label"><span>Съгласен съм с </span> <a href="/terms" target="_blank" class="mx-1"> Общите условия за ползване </a> <span> на К и К ООД</span></label></div> <input type="hidden" id="newsletter_global_captcha" name="newsletter_global[captcha]" data-controller="captcha" data-api-key="6LfAu70rAAAAABxvGPPaMykuTrnpAau7vZHXotqp"><input type="hidden" id="newsletter_global__token" name="newsletter_global[_token]" value="ImCe1PCJNdOp-QQAANUS6hzbv9_uPQO3cGgeyYM4VQY"></form></div> <div class="info-bulletin-footer"><div class="row justify-content-center justify-content-xl-start"><div class="col-xl-10 col-lg-7 col-md-8"><a target="_blank" href="https://www.filstar.com/bulgaria/pdf/Proekt.pdf?version=1779422228" class="d-block mb-4"><img src="/build/images/project-info-image.jpg" alt="Project info image" class="w-100"></a></div></div> <div class="row"><div class="col-xl-3 social-networks"><h4>Последвайте ни</h4> <ul><li><a href="https://www.facebook.com/FilstarFishing/" target="_blank"><img src="/build/images/icons/facebook-logo-button.svg" alt="Facebook icon"></a></li> <li><a href="https://www.instagram.com/filstarfishing/" target="_blank"><img src="/build/images/icons/instagram-logo.svg" alt="Facebook icon"></a></li> <li><a href="https://www.youtube.com/user/FilStarLtd" target="_blank"><img src="/build/images/icons/youtube-logotype.svg" alt="Facebook icon"></a></li></ul></div> <div class="col-xl-9 other-websites"><h4>ОЩЕ ОТ FILSTAR</h4> <ul><li><a href="https://www.fishing-floats.com/" target="_blank" class="main-button white">Fishing Floats</a></li> <li><a href="https://filstar.com/trolling-9/sonari-humminbird-29" target="_blank" class="main-button white">Humminbird.bg</a></li> <li><a href="https://fishingtour.filstar.com/" target="_blank" class="main-button white">Fishingtour.filstar.com</a></li></ul></div></div></div></div></div></div></div></footer> <a href="#" class="back-to-top"><img src="/build/images/icons/arrow-up.svg" alt="arrow logo"></a></div>
 
 <div class="cookies flex-lg-row flex-column justify-content-between show" id="cookie-banner">
     <div class="d-xl-flex text-left align-items-center cookies-a">
@@ -417,7 +461,7 @@
 </div>
 
 
-    <script src="/build/runtime.js"></script><script src="/build/vendors~adminApp~app.js"></script><script src="/build/vendors~app.js"></script><script src="/build/adminApp~app.js"></script><script src="/build/app.js"></script>
+    <script src="/build/runtime.d94b3b43.js"></script><script src="/build/0.eab9a25b.js"></script><script src="/build/2.894e9701.js"></script><script src="/build/app.b0e962ad.js"></script>
 
             
     
