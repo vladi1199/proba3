@@ -33,12 +33,14 @@
     
                         <link rel="alternate" hreflang="en" href="https://filstar.com/en/vobler-sbuz-tj-minnow">
                     <link rel="alternate" hreflang="bg" href="https://filstar.com/vobler-sbuz-tj-minnow">
+                    <link rel="alternate" hreflang="ro" href="https://filstar.com/ro/vobler-sbuz-tj-minnow">
+                    <link rel="alternate" hreflang="el" href="https://filstar.com/el/vobler-sbuz-tj-minnow">
             
 
-            <link rel="stylesheet" href="/build/vendors~adminApp~app.css"><link rel="stylesheet" href="/build/vendors~app.css"><link rel="stylesheet" href="/build/app.css">
+            <link rel="stylesheet" href="/build/0.10ce7f60.css"><link rel="stylesheet" href="/build/2.76dd3e7b.css"><link rel="stylesheet" href="/build/app.764d3891.css">
     
                     <!-- Global site tag (gtag.js) - Google Analytics -->
-            <script type="text/javascript" async="" src="https://www.google-analytics.com/analytics.js"></script><script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-ECXJW15GJF&amp;cx=c&amp;gtm=4e6411"></script><script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-36261628-1"></script>
+            <script type="text/javascript" async="" src="https://www.google-analytics.com/analytics.js"></script><script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-ECXJW15GJF&amp;cx=c&amp;gtm=4e6610h2"></script><script async="" src="https://www.googletagmanager.com/gtag/js?id=UA-36261628-1"></script>
             <script>
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
@@ -50,7 +52,7 @@
 <body data-controller="gtm" data-object="user" data-main="1" data-data="">
 <div id="app">
 
-                                                                                                                
+                                                                                                                    
         
 
 
@@ -64,11 +66,35 @@
                         </a>
                         <div class="mobile-content-icons">
 
-                            <div class="nav-item language d-xl-none d-inline-block align-middle">
-                                                                                                            <a href="https://filstar.com/en/vobler-sbuz-tj-minnow">
-                                            <img width="32px" class="ml-0" src="/build/images/icons/en_flag.svg" alt="flag icon">
-                                        </a>
-                                                                                                                                                                    </div>
+                            <div class="nav-item language d-xl-none d-inline-block align-middle mr-1">
+                                <div class="dropdown">
+                                    <a class="nav-link dropdown-toggle d-flex align-items-center p-0" href="#" id="languageDropdownTabletSec" type="button" data-toggle="dropdown" aria-expanded="false">
+
+                                        <img src="/build/images/icons/bg_flag.svg" alt="flag icon" class="mx-0" width="32px">
+                                    </a>
+
+                                    <div class="dropdown-menu" aria-labelledby="languageDropdownTabletSec">
+                                                                                                                                    <a class="dropdown-item py-2 px-0" href="https://filstar.com/en/vobler-sbuz-tj-minnow">
+
+                                                    <img src="/build/images/icons/en_flag.svg" alt="flag icon" class="mr-1" width="20">
+
+                                                    English
+                                                </a>
+                                                                                                                                                                                                                                                                    <a class="dropdown-item py-2 px-0" href="https://filstar.com/ro/vobler-sbuz-tj-minnow">
+
+                                                    <img src="/build/images/icons/ro_flag.svg" alt="flag icon" class="mr-1" width="20">
+
+                                                    Română
+                                                </a>
+                                                                                                                                                                                <a class="dropdown-item py-2 px-0" href="https://filstar.com/el/vobler-sbuz-tj-minnow">
+
+                                                    <img src="/build/images/icons/el_flag.svg" alt="flag icon" class="mr-1" width="20">
+
+                                                    ελληνικά
+                                                </a>
+                                                                                                                        </div>
+                                </div>
+                            </div>
 
                                 
                                     <a href="/login"><img width="32px" class="user-icn" src="/build/images/icons/user.svg" alt="user icon"></a>
@@ -96,7 +122,15 @@
             <a class="cart-text d-xl-block d-none" href="javascript:;">Моята количка</a>
         </div>
         <div class="modal-cart">
-                                    <div class="modal-cart-body">
+            <div class="modal-cart-header d-flex align-items-center" v-if="cart.canSelectStore">
+                <p>Поръчка от склад:</p>
+                <div class="warehouses">
+                    <a @click="selectStore(store)" href="#" :class="{active: (selectedStore && store.id === selectedStore.id)}"  v-for="store in stores">
+                        <span>[[ store.name ]]</span>
+                    </a>
+                </div>
+            </div>
+                        <div class="modal-cart-body">
                 <div class="product d-flex align-items-center" v-if="!cart.quantity && !loading">
                     Все още не сте добавили продукти.
                 </div>
@@ -134,8 +168,8 @@
 
             </div>
             <div class="modal-cart-footer" v-if="cart.quantity && !loading">
-                                <div class="p-2 text-center">[[ cart.freeShippingLabel ]]</div>
-                                <div class="total-price-holder">
+                <div class="p-2 text-center" v-if="cart.freeShippingLabel">[[ cart.freeShippingLabel ]]</div>
+                <div class="total-price-holder">
                     <div class="info-content d-flex align-items-center" v-if="cart.quantity">
                         <p>Общо:</p>
                         <div class="d-flex">
@@ -149,7 +183,7 @@
             </div>
         </div>
     </div>
-</script>                                                            <cart-widget remove-cart-row-url="/cart/remove" :exchange-rate="1.95583" :exchange-rate-mode="1" :convert-mode="1" decrement-url="/cart/decrease" increment-url="/cart/product/add-variant-to-cart" change-store-url="/cart/change-store" :stores="[{&quot;id&quot;:1,&quot;name&quot;:&quot;\u041f\u043b\u043e\u0432\u0434\u0438\u0432&quot;,&quot;isDefault&quot;:true},{&quot;id&quot;:2,&quot;name&quot;:&quot;\u0421\u043e\u0444\u0438\u044f&quot;,&quot;isDefault&quot;:false}]" :has-user="0" currency="EUR" locale="bg" :amount-for-free-shipping="76.69" :initial-cart="{&quot;id&quot;:&quot;17295187&quot;,&quot;hash&quot;:&quot;c3ae5f4c4e1441132dabcbb85aa17f8f&quot;,&quot;hasInvalidQuantities&quot;:false,&quot;total&quot;:0,&quot;totalPriceAfterDiscount&quot;:0,&quot;originalTotal&quot;:0,&quot;discount&quot;:0,&quot;selectedStore&quot;:{&quot;id&quot;:1,&quot;name&quot;:&quot;\u041f\u043b\u043e\u0432\u0434\u0438\u0432&quot;,&quot;isDefault&quot;:true},&quot;freeShippingLabel&quot;:&quot;\u041e\u0441\u0442\u0430\u0432\u0430\u0442 \u0432\u0438 \u043e\u0449\u0435 149.99 \u043b\u0432. \/ 76.69 \u20ac \u0434\u043e \u0431\u0435\u0437\u043f\u043b\u0430\u0442\u043d\u0430 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0430.&quot;,&quot;freeShippingCartLabel&quot;:&quot;\u041f\u0430\u0437\u0430\u0440\u0443\u0432\u0430\u0439\u0442\u0435 \u0437\u0430 \u043e\u0449\u0435 149.99 \u043b\u0432. \/ 76.69 \u20ac \u0432 \u0442\u0435\u043a\u0443\u0449\u0430\u0442\u0430 \u043f\u043e\u0440\u044a\u0447\u043a\u0430 \u0438 \u0449\u0435 \u043f\u043e\u043b\u0443\u0447\u0438\u0442\u0435 \u0431\u0435\u0437\u043f\u043b\u0430\u0442\u043d\u0430 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0430.&quot;,&quot;freeShippingCartLabelTrader&quot;:&quot;\u041f\u0430\u0437\u0430\u0440\u0443\u0432\u0430\u0439\u0442\u0435 \u0437\u0430 \u043e\u0449\u0435 149.99 \u043b\u0432. \/ 76.69 \u20ac \u0432 \u0442\u0435\u043a\u0443\u0449\u0430\u0442\u0430 \u043f\u043e\u0440\u044a\u0447\u043a\u0430 \u0438 \u0449\u0435 \u0441\u0438 \u0441\u043f\u0435\u0441\u0442\u0438\u0442\u0435 \u0442\u0430\u043a\u0441\u0430 \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430, \u0432 \u043a\u043e\u044f\u0442\u043e \u0435 \u0432\u043a\u043b\u044e\u0447\u0435\u043d\u0430 \u0438 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0430\u0442\u0430&quot;,&quot;hasFreeDelivery&quot;:false,&quot;rows&quot;:[],&quot;quantity&quot;:0}"></cart-widget>
+</script>                                                            <cart-widget remove-cart-row-url="/cart/remove" :exchange-rate="1.95583" :exchange-rate-mode="1" :convert-mode="1" decrement-url="/cart/decrease" increment-url="/cart/product/add-variant-to-cart" change-store-url="/cart/change-store" :stores="[{&quot;id&quot;:1,&quot;name&quot;:&quot;\u041f\u043b\u043e\u0432\u0434\u0438\u0432&quot;,&quot;isDefault&quot;:true},{&quot;id&quot;:2,&quot;name&quot;:&quot;\u0421\u043e\u0444\u0438\u044f&quot;,&quot;isDefault&quot;:false}]" :has-user="0" currency="EUR" locale="bg" :amount-for-free-shipping="76.69" :initial-cart="{&quot;id&quot;:&quot;23714740&quot;,&quot;hash&quot;:&quot;b8f3c7f05b78bc79c9083f0dd80fc9d8&quot;,&quot;hasInvalidQuantities&quot;:false,&quot;total&quot;:0,&quot;totalPriceAfterDiscount&quot;:0,&quot;originalTotal&quot;:0,&quot;discount&quot;:0,&quot;selectedStore&quot;:{&quot;id&quot;:1,&quot;name&quot;:&quot;\u041f\u043b\u043e\u0432\u0434\u0438\u0432&quot;,&quot;isDefault&quot;:true},&quot;hasFreeDelivery&quot;:false,&quot;canSeeSaveMoneyForOrderProcessing&quot;:false,&quot;canSelectStore&quot;:false,&quot;canSeeFreeDeliveryLabel&quot;:true,&quot;labelForCartPage&quot;:&quot;\u041f\u0430\u0437\u0430\u0440\u0443\u0432\u0430\u0439\u0442\u0435 \u0437\u0430 \u043e\u0449\u0435 149.99 \u043b\u0432. \/ 76.69 \u20ac \u0432 \u0442\u0435\u043a\u0443\u0449\u0430\u0442\u0430 \u043f\u043e\u0440\u044a\u0447\u043a\u0430 \u0438 \u0449\u0435 \u043f\u043e\u043b\u0443\u0447\u0438\u0442\u0435 \u0431\u0435\u0437\u043f\u043b\u0430\u0442\u043d\u0430 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0430.&quot;,&quot;freeShippingLabel&quot;:&quot;\u041e\u0441\u0442\u0430\u0432\u0430\u0442 \u0432\u0438 \u043e\u0449\u0435 149.99 \u043b\u0432. \/ 76.69 \u20ac \u0434\u043e \u0431\u0435\u0437\u043f\u043b\u0430\u0442\u043d\u0430 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0430.&quot;,&quot;deliveryToBeConfirmed&quot;:false,&quot;amountForFreeShipping&quot;:76.68999999999999772626324556767940521240234375,&quot;rows&quot;:[],&quot;quantity&quot;:0}"></cart-widget>
                                                         <button class="navbar-toggler open-mobile-menu" type="button" data-toggle="collapse" aria-controls="openMobileNavbar" data-target="#openMobileNavbar" aria-expanded="false" aria-label="Toggle navigation">
                                 <span class="navbar-toggler-icon"><img src="/build/images/icons/mobile_menu.svg" alt="" class="menu-icon"></span>
 
@@ -169,7 +203,7 @@
                     [[ product.name ]] [[ product.year ]]
                 </a>
             </div>
-            <a :href="fullSearchUrl" v-if="results.length && results.length === 6 && moreResultCount > 0"
+            <a :href="fullSearchUrl" v-if="results.length && results.length >= 5 && moreResultCount > 0"
                class="more-results">
                 Виж още [[moreResultCount]] резултата
             </a>
@@ -186,7 +220,7 @@
 </script>                            <search-autocomplete search-page-url="/search" search-url="/search-json-typesense" locale="bg" currency="EUR"></search-autocomplete>
                         
                         <div class="collapse navbar-collapse d-xl-flex d-none" id="">
-                            <ul class="navbar-nav ml-auto">
+                            <ul class="navbar-nav ml-auto align-items-center">
                                 <li class="nav-item active"><a href="https://blog.filstar.com/" class="nav-link" target="_blank">Блог</a>
                                 </li>
                                 <li class="nav-item"><a href="/distributors" class="nav-link">Дилъри</a>
@@ -197,13 +231,35 @@
                                 </li>
                                 <li class="nav-item"><a href="/contacts" class="nav-link">Контакти</a>
                                 </li>
-                                <li class="nav-item phone-content"><a href="tel:+359884742185" class="nav-link">0884 742 185</a></li>
-                                <li class="nav-item language">
-                                                                                                                        <img src="/build/images/icons/en_flag.svg" alt="flag icon">
-                                            <a href="https://filstar.com/en/vobler-sbuz-tj-minnow" class="nav-link">
-                                                English
-                                            </a>
-                                                                                                                                                                                        </li>
+                                                                <li class="nav-item phone-content"><a href="tel:+359884742185" class="nav-link">0884 742 185</a></li>
+                                                                <li class="nav-item language">
+                                    <div class="dropdown">
+                                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="languageDropdown" type="button" data-toggle="dropdown" aria-expanded="false">
+
+                                            <img src="/build/images/icons/bg_flag.svg" alt="flag icon" class="mr-2">
+
+                                            Български
+                                        </a>
+
+                                        <div class="dropdown-menu" aria-labelledby="languageDropdown">
+                                                                                                                                                <a class="dropdown-item d-flex align-items-center" href="https://filstar.com/en/vobler-sbuz-tj-minnow">
+
+                                                        <img src="/build/images/icons/en_flag.svg" alt="flag icon" class="mr-2" width="20">
+                                                        English
+                                                    </a>
+                                                                                                                                                                                                                                                                                            <a class="dropdown-item d-flex align-items-center" href="https://filstar.com/ro/vobler-sbuz-tj-minnow">
+
+                                                        <img src="/build/images/icons/ro_flag.svg" alt="flag icon" class="mr-2" width="20">
+                                                        Română
+                                                    </a>
+                                                                                                                                                                                                <a class="dropdown-item d-flex align-items-center" href="https://filstar.com/el/vobler-sbuz-tj-minnow">
+
+                                                        <img src="/build/images/icons/el_flag.svg" alt="flag icon" class="mr-2" width="20">
+                                                        ελληνικά
+                                                    </a>
+                                                                                                                                    </div>
+                                    </div>
+                                </li>
                                 <li class="nav-item social-networks">
                                     <a href="https://www.facebook.com/FilstarFishing/" target="_blank">
                                         <img src="/build/images/icons/facebook-logo-button.svg" alt="flag icon">
@@ -906,11 +962,37 @@
                                     
                                 </li>
                                 <li class="nav-item language ml-xl-auto d-xl-none">
-                                                                                                                        <a href="https://filstar.com/en/vobler-sbuz-tj-minnow" class="nav-link">
-                                                <img src="/build/images/icons/en_flag.svg" alt="flag icon">
-                                                English
-                                            </a>
-                                                                                                                                                                                        </li>
+
+                                    <div class="dropdown w-100">
+                                        <a class="nav-link dropdown-toggle d-flex align-items-center p-0" href="#" id="languageDropdownTablet" type="button" data-toggle="dropdown" aria-expanded="false">
+
+                                            <img src="/build/images/icons/bg_flag.svg" alt="flag icon" class="mr-2">
+
+                                            Български
+                                        </a>
+
+                                        <div class="dropdown-menu" aria-labelledby="languageDropdownTablet">
+                                                                                                                                                <a class="dropdown-item" href="https://filstar.com/en/vobler-sbuz-tj-minnow">
+
+                                                        <img src="/build/images/icons/en_flag.svg" alt="flag icon" class="mr-2" width="20">
+
+                                                        English
+                                                    </a>
+                                                                                                                                                                                                                                                                                            <a class="dropdown-item" href="https://filstar.com/ro/vobler-sbuz-tj-minnow">
+
+                                                        <img src="/build/images/icons/ro_flag.svg" alt="flag icon" class="mr-2" width="20">
+
+                                                        Română
+                                                    </a>
+                                                                                                                                                                                                <a class="dropdown-item" href="https://filstar.com/el/vobler-sbuz-tj-minnow">
+
+                                                        <img src="/build/images/icons/el_flag.svg" alt="flag icon" class="mr-2" width="20">
+
+                                                        ελληνικά
+                                                    </a>
+                                                                                                                                    </div>
+                                    </div>
+                                </li>
                                 <li class="nav-item cart d-xl-flex d-none" id="myCart">
                                     <script type="text/x-template" id="cart-widget">
     <div class="d-xl-block d-inline-block" style="vertical-align: middle">
@@ -932,7 +1014,15 @@
             <a class="cart-text d-xl-block d-none" href="javascript:;">Моята количка</a>
         </div>
         <div class="modal-cart">
-                                    <div class="modal-cart-body">
+            <div class="modal-cart-header d-flex align-items-center" v-if="cart.canSelectStore">
+                <p>Поръчка от склад:</p>
+                <div class="warehouses">
+                    <a @click="selectStore(store)" href="#" :class="{active: (selectedStore && store.id === selectedStore.id)}"  v-for="store in stores">
+                        <span>[[ store.name ]]</span>
+                    </a>
+                </div>
+            </div>
+                        <div class="modal-cart-body">
                 <div class="product d-flex align-items-center" v-if="!cart.quantity && !loading">
                     Все още не сте добавили продукти.
                 </div>
@@ -970,8 +1060,8 @@
 
             </div>
             <div class="modal-cart-footer" v-if="cart.quantity && !loading">
-                                <div class="p-2 text-center">[[ cart.freeShippingLabel ]]</div>
-                                <div class="total-price-holder">
+                <div class="p-2 text-center" v-if="cart.freeShippingLabel">[[ cart.freeShippingLabel ]]</div>
+                <div class="total-price-holder">
                     <div class="info-content d-flex align-items-center" v-if="cart.quantity">
                         <p>Общо:</p>
                         <div class="d-flex">
@@ -985,7 +1075,7 @@
             </div>
         </div>
     </div>
-</script>                                                                            <cart-widget remove-cart-row-url="/cart/remove" :exchange-rate="1.95583" :exchange-rate-mode="1" :convert-mode="1" decrement-url="/cart/decrease" increment-url="/cart/product/add-variant-to-cart" change-store-url="/cart/change-store" :stores="[{&quot;id&quot;:1,&quot;name&quot;:&quot;\u041f\u043b\u043e\u0432\u0434\u0438\u0432&quot;,&quot;isDefault&quot;:true},{&quot;id&quot;:2,&quot;name&quot;:&quot;\u0421\u043e\u0444\u0438\u044f&quot;,&quot;isDefault&quot;:false}]" :has-user="0" currency="EUR" locale="bg" :amount-for-free-shipping="76.69" :initial-cart="{&quot;id&quot;:&quot;17295187&quot;,&quot;hash&quot;:&quot;c3ae5f4c4e1441132dabcbb85aa17f8f&quot;,&quot;hasInvalidQuantities&quot;:false,&quot;total&quot;:0,&quot;totalPriceAfterDiscount&quot;:0,&quot;originalTotal&quot;:0,&quot;discount&quot;:0,&quot;selectedStore&quot;:{&quot;id&quot;:1,&quot;name&quot;:&quot;\u041f\u043b\u043e\u0432\u0434\u0438\u0432&quot;,&quot;isDefault&quot;:true},&quot;freeShippingLabel&quot;:&quot;\u041e\u0441\u0442\u0430\u0432\u0430\u0442 \u0432\u0438 \u043e\u0449\u0435 149.99 \u043b\u0432. \/ 76.69 \u20ac \u0434\u043e \u0431\u0435\u0437\u043f\u043b\u0430\u0442\u043d\u0430 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0430.&quot;,&quot;freeShippingCartLabel&quot;:&quot;\u041f\u0430\u0437\u0430\u0440\u0443\u0432\u0430\u0439\u0442\u0435 \u0437\u0430 \u043e\u0449\u0435 149.99 \u043b\u0432. \/ 76.69 \u20ac \u0432 \u0442\u0435\u043a\u0443\u0449\u0430\u0442\u0430 \u043f\u043e\u0440\u044a\u0447\u043a\u0430 \u0438 \u0449\u0435 \u043f\u043e\u043b\u0443\u0447\u0438\u0442\u0435 \u0431\u0435\u0437\u043f\u043b\u0430\u0442\u043d\u0430 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0430.&quot;,&quot;freeShippingCartLabelTrader&quot;:&quot;\u041f\u0430\u0437\u0430\u0440\u0443\u0432\u0430\u0439\u0442\u0435 \u0437\u0430 \u043e\u0449\u0435 149.99 \u043b\u0432. \/ 76.69 \u20ac \u0432 \u0442\u0435\u043a\u0443\u0449\u0430\u0442\u0430 \u043f\u043e\u0440\u044a\u0447\u043a\u0430 \u0438 \u0449\u0435 \u0441\u0438 \u0441\u043f\u0435\u0441\u0442\u0438\u0442\u0435 \u0442\u0430\u043a\u0441\u0430 \u043e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430, \u0432 \u043a\u043e\u044f\u0442\u043e \u0435 \u0432\u043a\u043b\u044e\u0447\u0435\u043d\u0430 \u0438 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0430\u0442\u0430&quot;,&quot;hasFreeDelivery&quot;:false,&quot;rows&quot;:[],&quot;quantity&quot;:0}"></cart-widget>
+</script>                                                                            <cart-widget remove-cart-row-url="/cart/remove" :exchange-rate="1.95583" :exchange-rate-mode="1" :convert-mode="1" decrement-url="/cart/decrease" increment-url="/cart/product/add-variant-to-cart" change-store-url="/cart/change-store" :stores="[{&quot;id&quot;:1,&quot;name&quot;:&quot;\u041f\u043b\u043e\u0432\u0434\u0438\u0432&quot;,&quot;isDefault&quot;:true},{&quot;id&quot;:2,&quot;name&quot;:&quot;\u0421\u043e\u0444\u0438\u044f&quot;,&quot;isDefault&quot;:false}]" :has-user="0" currency="EUR" locale="bg" :amount-for-free-shipping="76.69" :initial-cart="{&quot;id&quot;:&quot;23714740&quot;,&quot;hash&quot;:&quot;b8f3c7f05b78bc79c9083f0dd80fc9d8&quot;,&quot;hasInvalidQuantities&quot;:false,&quot;total&quot;:0,&quot;totalPriceAfterDiscount&quot;:0,&quot;originalTotal&quot;:0,&quot;discount&quot;:0,&quot;selectedStore&quot;:{&quot;id&quot;:1,&quot;name&quot;:&quot;\u041f\u043b\u043e\u0432\u0434\u0438\u0432&quot;,&quot;isDefault&quot;:true},&quot;hasFreeDelivery&quot;:false,&quot;canSeeSaveMoneyForOrderProcessing&quot;:false,&quot;canSelectStore&quot;:false,&quot;canSeeFreeDeliveryLabel&quot;:true,&quot;labelForCartPage&quot;:&quot;\u041f\u0430\u0437\u0430\u0440\u0443\u0432\u0430\u0439\u0442\u0435 \u0437\u0430 \u043e\u0449\u0435 149.99 \u043b\u0432. \/ 76.69 \u20ac \u0432 \u0442\u0435\u043a\u0443\u0449\u0430\u0442\u0430 \u043f\u043e\u0440\u044a\u0447\u043a\u0430 \u0438 \u0449\u0435 \u043f\u043e\u043b\u0443\u0447\u0438\u0442\u0435 \u0431\u0435\u0437\u043f\u043b\u0430\u0442\u043d\u0430 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0430.&quot;,&quot;freeShippingLabel&quot;:&quot;\u041e\u0441\u0442\u0430\u0432\u0430\u0442 \u0432\u0438 \u043e\u0449\u0435 149.99 \u043b\u0432. \/ 76.69 \u20ac \u0434\u043e \u0431\u0435\u0437\u043f\u043b\u0430\u0442\u043d\u0430 \u0434\u043e\u0441\u0442\u0430\u0432\u043a\u0430.&quot;,&quot;deliveryToBeConfirmed&quot;:false,&quot;amountForFreeShipping&quot;:76.68999999999999772626324556767940521240234375,&quot;rows&quot;:[],&quot;quantity&quot;:0}"></cart-widget>
                                                                     </li>
                             </ul>
 
@@ -1018,7 +1108,7 @@
     
 
                                                                                                                                                                                                                                                                                                             
-    <main class="page product-view-page " data-controller="gtm" data-event="eec.detail" data-object="product" data-action="productList" data-data="{&quot;id&quot;:&quot;3216&quot;,&quot;name&quot;:&quot;Воблер Sea Buzz TJ Minnow&quot;,&quot;sale_price&quot;:8.8499999999999996447286321199499070644378662109375,&quot;price&quot;:0,&quot;category&quot;:&quot;lures-7\/vobleri&quot;,&quot;variant&quot;:&quot; 2.80,  115 - MHRA,  5.00,  0.50&quot;,&quot;brand&quot;:&quot;Sea Buzz&quot;}" data-unique-event-id="69d1c8c935e20">
+    <main class="page product-view-page " data-controller="gtm" data-event="eec.detail" data-object="product" data-action="productList" data-data="{&quot;id&quot;:&quot;3216&quot;,&quot;name&quot;:&quot;Воблер Sea Buzz TJ Minnow&quot;,&quot;sale_price&quot;:8.8499999999999996447286321199499070644378662109375,&quot;price&quot;:0,&quot;category&quot;:&quot;lures-7\/vobleri&quot;,&quot;variant&quot;:&quot; 2.80,  115 - MHRA,  5.00,  0.50&quot;,&quot;brand&quot;:&quot;Sea Buzz&quot;}" data-unique-event-id="6a1e4e2d48909">
         <div class="page-content">
 
             <div class="page-info">
@@ -1075,7 +1165,10 @@
                         <div class="col-xl-6">
                                                         <div class="gallery">
                                 <div class="media-gallery d-xl-flex" id="mediaGallery">
-                                                                            <div class="lSSlideOuter order-2">
+                                                                                                
+                                                    
+                                                    
+                                                <div class="lSSlideOuter order-2">
                                             <div class="lSSlideWrapper usingCss" style="transition-duration: 400ms; transition-timing-function: ease;">
                                                 <ul class="filstar-gallery">
                                                                                                                                                                                                                                                                     <li data-fancybox="fullGallery" data-src="https://filstar.com/media/cache/product_preview_default_original/images/originals/products/949380_TJ_Minnow_MRY_-20210607162427-456.jpg" data-thumb="https://filstar.com/media/cache/product_thumbnail_default/images/originals/products/949380_TJ_Minnow_MRY_-20210607162427-456.jpg" data-media-id="7975" data-caption="Воблер Sea Buzz TJ Minnow" class="lslide active desktop-image">
@@ -1220,24 +1313,27 @@
                                                 <img src="/build/images/icons/arrow-left.svg" alt="arrow icon">
                                             </button>
                                                                                 <ul class="thumbnails order-1">
-                                                                                                                                            
                                                                                                                                                 <li data-src="https://www.youtube.com/embed/UVE7Juy6p0E" data-thumb="https://filstar.com/media/cache/product_view_default/UVE7Juy6p0E.jpg" class="video desktop-video">
-                                                    <a href="https://www.youtube.com/embed/UVE7Juy6p0E" data-fancybox="fullGallery" data-caption="Воблер Sea Buzz TJ Minnow">
-                                                        <img src="https://filstar.com/media/cache/product_view_default/UVE7Juy6p0E.jpg" alt="Воблер Sea Buzz TJ Minnow" class="is_video thumbnail-image">
-                                                    </a>
-                                                </li>
-                                                                                                                                                                                            
-                                                                                                                                                <li data-src="https://www.youtube.com/embed/45rCc13LafM" data-thumb="https://filstar.com/media/cache/product_view_default/45rCc13LafM.jpg" class="video desktop-video">
-                                                    <a href="https://www.youtube.com/embed/45rCc13LafM" data-fancybox="fullGallery" data-caption="Воблер Sea Buzz TJ Minnow">
-                                                        <img src="https://filstar.com/media/cache/product_view_default/45rCc13LafM.jpg" alt="Воблер Sea Buzz TJ Minnow" class="is_video thumbnail-image">
-                                                    </a>
-                                                </li>
-                                                                                                                                                                                            
-                                                                                                                                                <li data-src="https://www.youtube.com/embed/LTDNJenS9hI" data-thumb="https://filstar.com/media/cache/product_view_default/LTDNJenS9hI.jpg" class="video desktop-video">
-                                                    <a href="https://www.youtube.com/embed/LTDNJenS9hI" data-fancybox="fullGallery" data-caption="Воблер Sea Buzz TJ Minnow">
-                                                        <img src="https://filstar.com/media/cache/product_view_default/LTDNJenS9hI.jpg" alt="Воблер Sea Buzz TJ Minnow" class="is_video thumbnail-image">
-                                                    </a>
-                                                </li>
+    <a href="https://www.youtube.com/embed/UVE7Juy6p0E" data-fancybox="fullGallery" data-type="iframe" data-caption="Воблер Sea Buzz TJ Minnow">
+        <img src="https://filstar.com/media/cache/product_view_default/UVE7Juy6p0E.jpg" alt="Воблер Sea Buzz TJ Minnow" class="is_video thumbnail-image">
+    </a>
+</li>
+
+
+                                                                                                                                                                                                <li data-src="https://www.youtube.com/embed/45rCc13LafM" data-thumb="https://filstar.com/media/cache/product_view_default/45rCc13LafM.jpg" class="video desktop-video">
+    <a href="https://www.youtube.com/embed/45rCc13LafM" data-fancybox="fullGallery" data-type="iframe" data-caption="Воблер Sea Buzz TJ Minnow">
+        <img src="https://filstar.com/media/cache/product_view_default/45rCc13LafM.jpg" alt="Воблер Sea Buzz TJ Minnow" class="is_video thumbnail-image">
+    </a>
+</li>
+
+
+                                                                                                                                                                                                <li data-src="https://www.youtube.com/embed/LTDNJenS9hI" data-thumb="https://filstar.com/media/cache/product_view_default/LTDNJenS9hI.jpg" class="video desktop-video">
+    <a href="https://www.youtube.com/embed/LTDNJenS9hI" data-fancybox="fullGallery" data-type="iframe" data-caption="Воблер Sea Buzz TJ Minnow">
+        <img src="https://filstar.com/media/cache/product_view_default/LTDNJenS9hI.jpg" alt="Воблер Sea Buzz TJ Minnow" class="is_video thumbnail-image">
+    </a>
+</li>
+
+
                                                                                             
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 <li>
                                                         <img src="https://filstar.com/media/cache/product_thumbnail_default/images/originals/products/949380_TJ_Minnow_MRY_-20210607162427-456.jpg" alt="Воблер Sea Buzz TJ Minnow" class="thumbnail-image slider-thumbnail-scroll" data-media-item-id="7975">
@@ -1424,71 +1520,4 @@
 
             <section class="product-view-footer">
                 <div class="container">
-                    <div class="row ">
-                        <div class="col-12">
-                            <div class="accordion product-details" id="accordion">
-                                <ul class="title-links">
-                                    <li>
-                                        <button class="btn table-products" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                                            Варианти
-                                        </button>
-                                    </li>
-                                    <li>
-                                        <button id="detailsBtn" class="btn collapsed descriptions" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                                            Описание и характеристики
-                                        </button>
-                                    </li>
-                                                                                                                                                                                                                                                                                                                                    
-                                </ul>
-                                <div id="collapseOne" class="collapse " aria-labelledby="headingOne" data-parent="#accordion">
-                                    <div class="description-characteristics">
-                                        <div class="row col-12 p-0">
-                                                                                                                                    <div id="longDesc" class="row col-12">
-                                                                                                <div class="col-xl-6 info">
-                                                    Воблер с класическа форма на Minnow и неутрална плаваемост (suspending), отличаващ се с бърза и остра игра. Много добра реакция при Jerking и Twitching техники, при които TJ Minnow ефективно провокира хищниците за атака и дава добри резултати. Воблерът разполага с вградена тракаща система и две тройни куки на Owner. TJ Minnow е примамка с неповторима стабилност и атрактивна игра, отличен помощник в риболова на пъстърва, кефал и костур.
-                                                </div>
-                                                <div class="col-xl-6 video">
-                                                                                                            <div class="video-image-content">
-                                                            <embed width="100%" height="380" src="https://www.youtube.com/embed/UVE7Juy6p0E">
-                                                        </div>
-
-                                                                                                            <div class="video-image-content">
-                                                            <embed width="100%" height="380" src="https://www.youtube.com/embed/45rCc13LafM">
-                                                        </div>
-
-                                                                                                            <div class="video-image-content">
-                                                            <embed width="100%" height="380" src="https://www.youtube.com/embed/LTDNJenS9hI">
-                                                        </div>
-
-                                                                                                                                                        </div>
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                </div>
-
-                                <div id="collapseTwo" class="collapse show" aria-labelledby="headingTwo" data-parent="#accordion">
-                                                                        
-                                    <script type="text/x-template" id="add-to-cart-row">
-    <tr class="table-row-scroll">
-    <th class="scrollable-td table-image" scope="row" style="position: relative; padding-left: 100px;" width="75">
-        <span class="new-label" v-if="variant.needLabelNew">
-            Ново
-        </span>
-        <span class="new-label-with-back-in-stock" v-else-if="variant.needLabelBackInStock">
-            На склад
-        </span>
-        <input type="hidden" :value="variant.id">
-        <div
-                @click="changeVariantInMainOption(variant.sku)"
-             class="table-fancybox lslide">
-            <img v-if="variant.gallery.length > 0" :src="variant.gallery[0].thumb" loading="lazy" alt="product image">
-        </div>
-    </th>
-    <td class="scrollable-td td-sky">
-        <span class="item-names-on-mobile">КОД</span>
-        [[ variant.sku ]]
-    </td>
-        <td class="scrollable-td">
-        <span class="item-names-on-mobile">Модел</span>
-        <strong style="font-weight: b</script></div></div></div></div></div></section></div></main></div></body></html>
+                    <div class="row "></div></div></section></div></main></div></body></html>
