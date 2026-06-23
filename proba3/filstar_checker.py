@@ -44,8 +44,7 @@ MAX_CANDIDATES = 12
 
 # ---------------- ПОМОЩНИ ----------------
 def only_digits(s: str) -> str:
-return re.sub(r"\D+", "", s or "")
-
+    return re.sub(r"\D+", "", s or "")
 def save_debug_html(driver, sku: str, tag: str):
 try:
 path = os.path.join(DEBUG_DIR, f"debug_{sku}_{tag}.html")
