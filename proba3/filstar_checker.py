@@ -41,16 +41,27 @@ def save_debug_html(driver, sku: str, tag: str):
         print(f"   🐞 Debug HTML записан: {path}")
     except Exception:
         pass
-
 def create_driver() -> webdriver.Chrome:
     opts = Options()
+
     opts.add_argument("--headless=new")
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
+
+    # 🔥 FIX за crash (много важно)
+    opts.add_argument("--disable-gpu")
+    opts.add_argument("--single-process")
+    opts.add_argument("--no-zygote")
+    opts.add_argument("--disable-extensions")
+
+    # 🔥 memory reduction
     opts.add_argument("--window-size=1280,2200")
+    opts.add_argument("--blink-settings=imagesEnabled=false")
 
     driver = webdriver.Chrome(options=opts)
+
     driver.set_page_load_timeout(PAGE_TIMEOUT)
+
     return driver
 
 def init_result_files():
