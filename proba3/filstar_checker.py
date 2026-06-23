@@ -12,12 +12,13 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import WebDriverException, InvalidSessionIdException
 
 # ---------------- ПЪТИЩА ----------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 SKU_CSV = os.path.join(BASE_DIR, "sku_list_filstar.csv")
 RES_CSV = os.path.join(BASE_DIR, "results_filstar.csv")
-NF_CSV  = os.path.join(BASE_DIR, "not_found_filstar.csv")
+NF_CSV = os.path.join(BASE_DIR, "not_found_filstar.csv")
 DEBUG_DIR = os.path.join(BASE_DIR, "debug_html")
 os.makedirs(DEBUG_DIR, exist_ok=True)
 
@@ -25,13 +26,15 @@ SEARCH_URL = "https://filstar.com/search?term={q}"
 
 # ---------------- НАСТРОЙКИ ----------------
 REQUEST_WAIT = 0.5
-BETWEEN_SKU  = 0.6
+BETWEEN_SKU = 0.6
 PAGE_TIMEOUT = 60
 MAX_CANDIDATES = 12
+
 
 # ---------------- ПОМОЩНИ ----------------
 def only_digits(s: str) -> str:
     return re.sub(r"\D+", "", s or "")
+
 
 def save_debug_html(driver, sku: str, tag: str):
     try:
@@ -41,29 +44,39 @@ def save_debug_html(driver, sku: str, tag: str):
         print(f"   🐞 Debug HTML записан: {path}")
     except Exception:
         pass
-def create_driver() -> webdriver.Chrome:
+
+
+# ---------------- DRIVER ----------------
+def create_driver():
     opts = Options()
 
     opts.add_argument("--headless=new")
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
 
-    # 🔥 FIX за crash (много важно)
+    # stability fixes
     opts.add_argument("--disable-gpu")
-    opts.add_argument("--single-process")
     opts.add_argument("--no-zygote")
+    opts.add_argument("--single-process")
     opts.add_argument("--disable-extensions")
-
-    # 🔥 memory reduction
     opts.add_argument("--window-size=1280,2200")
     opts.add_argument("--blink-settings=imagesEnabled=false")
 
     driver = webdriver.Chrome(options=opts)
-
     driver.set_page_load_timeout(PAGE_TIMEOUT)
-
     return driver
 
+
+def restart_driver(driver):
+    print("🔄 Restarting Chrome driver...")
+    try:
+        driver.quit()
+    except Exception:
+        pass
+    return create_driver()
+
+
+# ---------------- FILES ----------------
 def init_result_files():
     with open(RES_CSV, "w", newline="", encoding="utf-8") as f:
         csv.writer(f).writerow(["SKU", "Наличност", "Бройки", "Цена (лв.)"])
@@ -71,13 +84,16 @@ def init_result_files():
     with open(NF_CSV, "w", newline="", encoding="utf-8") as f:
         csv.writer(f).writerow(["SKU"])
 
+
 def append_result(row):
     with open(RES_CSV, "a", newline="", encoding="utf-8") as f:
         csv.writer(f).writerow(row)
 
+
 def append_nf(sku: str):
     with open(NF_CSV, "a", newline="", encoding="utf-8") as f:
         csv.writer(f).writerow([sku])
+
 
 def read_skus(path: str):
     out = []
@@ -92,10 +108,16 @@ def read_skus(path: str):
                 out.append(v)
     return out
 
-# ---------------- ТЪРСЕНЕ ----------------
+
+# ---------------- SEARCH ----------------
 def get_search_candidates(driver, sku: str):
     url = SEARCH_URL.format(q=sku)
-    driver.get(url)
+
+    try:
+        driver.get(url)
+    except Exception:
+        return []
+
     time.sleep(REQUEST_WAIT)
 
     try:
@@ -134,8 +156,8 @@ def get_search_candidates(driver, sku: str):
             uniq.append(h)
 
     return uniq[:MAX_CANDIDATES]
-
-# ---------------- ПРОДУКТОВА СТРАНИЦА ----------------
+    
+# ---------------- PRODUCT PAGE ----------------
 def extract_from_product_page(driver, sku: str):
     try:
         WebDriverWait(driver, PAGE_TIMEOUT).until(
@@ -144,7 +166,11 @@ def extract_from_product_page(driver, sku: str):
     except Exception:
         return None, None, None
 
-    tbody = driver.find_element(By.CSS_SELECTOR, "#fast-order-table tbody")
+    try:
+        tbody = driver.find_element(By.CSS_SELECTOR, "#fast-order-table tbody")
+    except Exception:
+        return None, None, None
+
     rows = tbody.find_elements(By.CSS_SELECTOR, "tr")
     target = None
 
@@ -169,7 +195,7 @@ def extract_from_product_page(driver, sku: str):
     if target is None:
         return None, None, None
 
-    # --- Цена ---
+    # --- PRICE ---
     price = None
     try:
         strike_el = target.find_element(By.TAG_NAME, "strike")
@@ -186,9 +212,9 @@ def extract_from_product_page(driver, sku: str):
                 price = m2.group(1).replace(",", ".")
         except Exception:
             pass
-              # --- Наличност само по tooltip/email (без бройки) ---
-    status = "Наличен"
 
+    # --- STATUS ---
+    status = "Наличен"
     try:
         target.find_element(By.CSS_SELECTOR, "[data-target='#send-request']")
         status = "Изчерпан"
@@ -206,15 +232,15 @@ def extract_from_product_page(driver, sku: str):
         except Exception:
             pass
 
-    qty_placeholder = "-"
-    return status, qty_placeholder, price
+    return status, "-", price
 
 
-# ---------------- ОБРАБОТКА НА 1 SKU ----------------
+# ---------------- PROCESS SKU ----------------
 def process_one_sku(driver, sku: str):
     print(f"\n➡️ Обработвам SKU: {sku}")
 
     candidates = get_search_candidates(driver, sku)
+
     if not candidates:
         save_debug_html(driver, sku, "search_no_results")
         append_nf(sku)
@@ -222,15 +248,22 @@ def process_one_sku(driver, sku: str):
 
     for link in candidates:
         try:
-            driver.get(link)
+            try:
+                driver.get(link)
+            except (WebDriverException, InvalidSessionIdException):
+                raise
+
             time.sleep(REQUEST_WAIT)
 
-            status, qty_ph, price = extract_from_product_page(driver, sku)
+            status, qty, price = extract_from_product_page(driver, sku)
 
             if price is not None:
                 print(f"  ✅ {sku} → {price} € | {status} | {link}")
-                append_result([sku, status or "Наличен", qty_ph, price])
+                append_result([sku, status or "Наличен", qty, price])
                 return
+
+        except InvalidSessionIdException:
+            raise
 
         except Exception:
             continue
@@ -252,12 +285,31 @@ def main():
 
     driver = create_driver()
 
+    i = 0
+
     try:
-        for sku in skus:
-            process_one_sku(driver, sku)
+        while i < len(skus):
+            sku = skus[i]
+
+            try:
+                process_one_sku(driver, sku)
+                i += 1
+
+            except InvalidSessionIdException:
+                print("💥 Chrome session падна - рестарт...")
+                driver = restart_driver(driver)
+
+            except Exception as e:
+                print(f"⚠️ Грешка при SKU {sku}: {e}")
+                i += 1
+
             time.sleep(BETWEEN_SKU)
+
     finally:
-        driver.quit()
+        try:
+            driver.quit()
+        except Exception:
+            pass
 
     print(f"\n✅ Резултати: {RES_CSV}")
     print(f"📄 Not found: {NF_CSV}")
